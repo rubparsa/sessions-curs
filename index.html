@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<!--
+  Sessions del curs: planificador de sessions i situacions d'aprenentatge.
+  Copyright (C) 2026 Rubén Parra Savall
+
+  Aquest programa és programari lliure: el podeu redistribuir i/o modificar
+  d'acord amb els termes de la Llicència Pública General de GNU publicada per
+  la Free Software Foundation, ja siga la versió 3 de la Llicència o (a la
+  vostra elecció) qualsevol versió posterior. Es distribueix amb l'esperança
+  que siga útil, però SENSE CAP GARANTIA. Vegeu el fitxer LICENSE o
+  <https://www.gnu.org/licenses/> per a més detalls.
+-->
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sessions del curs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1ED; --surface:#FFFFFF; --ink:#17252C; --muted:#56656B; --line:#CDD5D0;
+  --accent:#22466A; --red:#C8352B; --inc:#C25E00; --ev:#7B4FD0; --danger:#A3322B; --mix:30%;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11181B; --surface:#192327; --ink:#E4EBEC; --muted:#97A6AB; --line:#2E3C41;
+    --accent:#93B7DE; --red:#EC6A60; --inc:#F29A45; --ev:#AE8DF2; --danger:#E0877F; --mix:34%; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11181B; --surface:#192327; --ink:#E4EBEC; --muted:#97A6AB; --line:#2E3C41;
+  --accent:#93B7DE; --red:#EC6A60; --inc:#F29A45; --ev:#AE8DF2; --danger:#E0877F; --mix:34%; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 150px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.ic{width:18px;height:18px;display:block}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 16px 8px}
+.toprow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.top h1{font-family:var(--display);font-weight:700;font-size:21px;margin:0;letter-spacing:-.01em}
+.status{font-size:13px;color:var(--muted)}
+.status.err{color:var(--danger);font-weight:700}
+.actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 12px;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:700}
+.btn:hover{border-color:var(--accent)}
+.btn[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.btn.icon{padding:0;width:34px;height:32px;display:grid;place-items:center}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.navrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:5px 11px;font-size:14px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);font-weight:700}
+.nav{display:flex;align-items:center;gap:6px}
+.navlbl{font-family:var(--display);font-weight:700;font-size:18px;min-width:12ch}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.fbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:13px;display:inline-flex;gap:6px;align-items:center}
+.fbtn[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.fbtn i{width:10px;height:10px;border-radius:3px;background:var(--g);display:inline-block}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-left:auto;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:14px;height:14px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+.filebar{background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px}
+.filebar p{margin:0 0 8px;font-size:14px}
+.phead{display:none}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding:14px 16px}
+@media (min-width:1050px){
+  .layout.withsum{grid-template-columns:minmax(0,1fr) 310px}
+  .sum{position:sticky;top:calc(env(safe-area-inset-top,0px) + 150px);max-height:calc(100vh - 170px);overflow:auto}
+}
+.sum[hidden]{display:none}
+.empty{background:var(--surface);border:1px dashed var(--muted);border-radius:10px;padding:16px;margin-bottom:16px}
+.empty p{margin:0 0 10px}
+
+.mrows{display:flex;flex-direction:column;gap:14px}
+.mrow{display:grid;grid-template-columns:repeat(var(--k,1),minmax(0,1fr));gap:14px 18px}
+@media (max-width:760px){ .mrow{grid-template-columns:repeat(auto-fill,minmax(290px,1fr))} }
+.month h2{font-family:var(--display);font-weight:700;line-height:1;margin:0 0 6px;letter-spacing:-.02em;font-size:28px}
+.v-two .month h2{font-size:22px}
+.v-term .month h2{font-size:18px;margin-bottom:3px}
+.v-term .wh{font-size:11px}
+.v-year .month h2{font-size:16px;letter-spacing:0;margin-bottom:3px}
+.month h2 span{font-size:.5em;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:5px}
+.gridwrap{overflow-x:auto}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.v-month .grid{min-width:560px}
+.v-week .grid{min-width:660px;gap:8px}
+.v-year .grid{gap:2px}
+.wh{font-size:12.5px;color:var(--muted);padding:0 4px;line-height:1.3}
+.v-year .wh{font-size:10px;padding:0 1px}
+
+.day{--tc:transparent;container-type:inline-size;position:relative;text-align:left;border:1px solid var(--line);border-radius:6px;background:color-mix(in srgb,var(--tc) var(--mix),var(--surface));padding:4px;display:flex;flex-direction:column;align-items:stretch;gap:3px;overflow:hidden;min-height:var(--h,86px)}
+.v-week .day{padding:8px;gap:8px}
+.v-term .day,.v-two .day{padding:3px;gap:2px}
+.v-year .day{padding:2px;gap:2px;border-radius:4px}
+.day.notterm{background:var(--surface)}
+.day.eval{background:color-mix(in srgb,var(--ev) 32%,var(--surface));border-color:var(--ev)}
+.day.off{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--red) 28%,var(--surface)) 0 6px,color-mix(in srgb,var(--red) 15%,var(--surface)) 6px 12px);border-color:color-mix(in srgb,var(--red) 60%,var(--surface))}
+.day.off.inc{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--inc) 30%,var(--surface)) 0 6px,color-mix(in srgb,var(--inc) 15%,var(--surface)) 6px 12px);border-color:color-mix(in srgb,var(--inc) 65%,var(--surface))}
+.day.off.inc .offl{color:var(--inc)}
+.pk-d.inc{color:var(--inc);font-weight:700}
+.day.out{background:transparent;border-style:dashed;opacity:.4;cursor:default}
+.day.dim{opacity:.4}
+.day.today{border:2px solid var(--ink)}
+.day:not(.out):hover{border-color:var(--accent)}
+.dn{font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:4px;line-height:1.2}
+.v-year .dn{font-size:10px;font-weight:400}
+.dn .nt{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+.offl{font-size:12px;color:var(--red);font-weight:700;line-height:1.2}
+.evl{font-size:12px;color:var(--ev);font-weight:700;line-height:1.2}
+.v-year .offl,.v-year .evl{display:none}
+.tmark{font-size:11px;color:var(--muted);font-weight:400}
+
+.chip{--c:#8A9399;display:flex;align-items:center;gap:.35em;line-height:1.25;border-radius:.3em;background:color-mix(in srgb,var(--c) 22%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 60%,transparent);padding:.08em .35em .08em .12em;white-space:nowrap;overflow:hidden;flex:1 1 auto;font-size:12px}
+.chip b{background:var(--g);color:var(--gt,#fff);border-radius:.28em;padding:0 .35em;font-size:.85em;font-weight:700;flex:none}
+.chip i{font-style:normal;font-weight:700}
+.chip em{margin-left:auto;font-style:normal;color:var(--muted);font-size:.85em;padding-left:.3em}
+.chip.end{border:2px solid var(--c);padding:0 .3em 0 .05em}
+.chip.plus b::after{content:" +"}
+.chip.x{background:transparent;border:1px dashed var(--muted);color:var(--muted)}
+.v-month .chip{font-size:clamp(11.5px,min(calc((var(--h) - 26px - var(--lab,0) * 18px) / var(--n,1) * .5),calc(100cqi / (var(--len,16) * .6 + 1.4))),26px)}
+.v-two .chip{font-size:clamp(10px,min(calc((var(--h) - 20px - var(--lab,0) * 14px) / var(--n,1) * .52),calc(100cqi / (var(--len,12) * .6 + 1.4))),22px)}
+.v-term .chip{font-size:clamp(9px,min(calc((var(--h) - 18px - var(--lab,0) * 13px) / var(--n,1) * .55),calc(100cqi / (var(--len,12) * .6 + 1.4))),18px)}
+.v-term .day,.v-two .day{padding:2px 3px;gap:1px}
+.v-term .dn,.v-two .dn{font-size:11.5px;line-height:1.1}
+.v-term .chip,.v-two .chip{line-height:1.12;padding:0 .3em 0 .1em}
+.v-term .offl,.v-term .evl,.v-two .offl,.v-two .evl{font-size:11px;line-height:1.1}
+.dots{display:flex;flex-wrap:wrap;gap:2px}
+.dot{width:clamp(8px,calc(var(--h,30px) / 4.5),14px);aspect-ratio:1;border-radius:2px;background:var(--c);border:1px solid color-mix(in srgb,var(--c) 70%,#000)}
+.dot.end{outline:2px solid var(--ink);outline-offset:-1px}
+.dot.x{background:transparent;border:1px dashed var(--muted)}
+
+.ent{--c:#8A9399;border-radius:6px;background:color-mix(in srgb,var(--c) 20%,var(--surface));border:1px solid color-mix(in srgb,var(--c) 60%,transparent);border-left:5px solid var(--c);padding:.4em .6em;line-height:1.35;flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;font-size:clamp(13px,min(calc((var(--h) - 40px - var(--lab,0) * 20px) / var(--n,1) * .17),10cqi),26px)}
+.ent.end{border-width:2px 2px 2px 5px;border-color:var(--c)}
+.ent.x{background:transparent;border:1px dashed var(--muted);border-left:5px solid var(--muted);color:var(--muted)}
+.ent .eh{display:flex;gap:6px;align-items:center;font-weight:700;flex-wrap:wrap}
+.ent .eh b{background:var(--g);color:var(--gt,#fff);border-radius:4px;padding:0 .4em;font-size:.85em;flex:none}
+.ent .en{font-size:1.3em;font-weight:700;margin-top:.1em}
+.ent .em{color:var(--muted);font-size:.9em}
+.ent .note{margin-top:4px;font-style:italic}
+.ent .tm{margin-left:auto;font-weight:400;color:var(--muted)}
+.ent .ses{font-size:1.02em;margin:.2em 0 .1em}
+.ent .ses b{color:var(--muted)}
+details.lost{margin-top:8px;font-size:13px}
+details.lost summary{cursor:pointer;color:var(--muted)}
+details.lost .lh{font-weight:700;margin:6px 0 2px}
+details.lost ul{list-style:none;margin:0;padding:0}
+details.lost li{display:flex;justify-content:space-between;gap:8px;padding:1px 0}
+.daynote{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px;margin-top:auto;white-space:pre-wrap}
+
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.sum h2{font-family:var(--display);font-size:20px;margin:0 0 8px}
+.gsum{border-top:1px solid var(--line);padding-top:12px;margin-top:12px;break-inside:avoid}
+.gsum:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.gsum h3{margin:0 0 6px;font-size:15px;display:flex;gap:8px;align-items:center}
+.gsum h3 b,.badge{white-space:nowrap;flex:none;background:var(--g);color:var(--gt,#fff);border-radius:4px;padding:0 6px;font-size:12px;font-weight:700}
+table.tc{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+table.tc th,table.tc td{border:1px solid var(--line);padding:3px 6px;text-align:center}
+table.tc th{font-weight:400;color:var(--muted)}
+table.tc td.tot{font-weight:700}
+.bal{font-size:13px;margin:6px 0}
+.bal.neg{color:var(--danger);font-weight:700}
+.slist{list-style:none;margin:6px 0 0;padding:0;font-size:13px}
+.slist li{display:grid;grid-template-columns:12px 1fr auto;gap:6px;align-items:baseline;padding:3px 0}
+.slist .sdot{width:10px;height:10px;border-radius:3px;background:var(--c);align-self:center}
+.slist .dt{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.slist .warn{color:var(--danger)}
+
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:0;width:min(720px,calc(100vw - 20px));max-height:calc(100vh - 40px)}
+dialog.small{width:min(440px,calc(100vw - 20px))}
+dialog::backdrop{background:rgba(10,20,25,.45)}
+.dhead{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface);z-index:1}
+.dhead h2{font-family:var(--display);font-size:22px;margin:0;line-height:1.15}
+.dhead p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.dhead .btn{margin-left:auto}
+.dbody{padding:14px 16px 18px}
+.blk{padding:10px 0;border-bottom:1px solid var(--line)}
+.blk:last-child{border-bottom:0}
+.chk{display:flex;gap:8px;align-items:center;font-weight:700}
+.chk input{width:18px;height:18px}
+.hint{color:var(--muted);font-size:13px;margin:4px 0 0}
+.err{color:var(--danger);font-size:13px;font-weight:700;margin:6px 0 0}
+input[type=text],input:not([type]),input[type=number],select,textarea{border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:5px 8px;min-width:0}
+textarea{width:100%;min-height:60px}
+.grow .gh{display:flex;gap:8px;align-items:center;font-weight:700;margin-bottom:6px}
+.grow .gh b{background:var(--g);color:var(--gt,#fff);border-radius:4px;padding:0 6px;font-size:12px}
+.step{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.step button{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:var(--bg);font-size:18px;line-height:1}
+.step output{min-width:22px;text-align:center;font-weight:700;font-size:17px}
+.grow input.gnote{width:100%;margin-top:6px}
+.prev{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.prev .chip{flex:0 1 auto}
+.link{background:none;border:0;color:var(--accent);text-decoration:underline;padding:0;font-size:13px;margin-top:6px}
+.full{width:100%;margin-top:6px}
+.tsel{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+.tsel label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding:10px 16px 0;border-bottom:1px solid var(--line)}
+.tab{border:1px solid transparent;border-bottom:0;background:none;padding:6px 12px;border-radius:8px 8px 0 0;font-size:14px;color:var(--muted)}
+.tab[aria-selected="true"]{border-color:var(--line);background:var(--bg);color:var(--ink);font-weight:700}
+.gcard{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px;border-left:6px solid var(--g)}
+.gcard.new{border-style:dashed;border-left-style:solid}
+.gcard h3{margin:0 0 8px;font-size:15px}
+.fields{display:grid;grid-template-columns:110px minmax(140px,1fr) auto;gap:8px 10px;align-items:end}
+.fields .fdel{align-self:end}
+.f{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+.f input,.f select{color:var(--ink);font-size:14.5px}
+.f.wide{grid-column:1 / -1}
+input.code{font-weight:700}
+input[type=color]{width:42px;height:34px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.days{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end}
+.days label{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12.5px;color:var(--muted)}
+.days input{width:50px;text-align:center}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.srow{display:grid;grid-template-columns:auto 42px minmax(120px,1fr) 64px auto;gap:6px;align-items:center;margin-bottom:6px}
+.srow .num{font-weight:700;font-size:13px;min-width:44px}
+.srow{padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.srow .sx{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12.5px;color:var(--muted)}
+.srow .aft{display:inline-flex;align-items:center;gap:6px}
+.srow .aft .dbtn{font-size:13px;padding:3px 8px}
+.sesd{grid-column:1 / -1;font-size:13px}
+.sesd summary{cursor:pointer;color:var(--accent)}
+.sesl{display:grid;gap:4px;margin:6px 0 2px}
+.sesl label{display:grid;grid-template-columns:42px 1fr;align-items:center;gap:6px;color:var(--muted)}
+.days.times input{width:112px;text-align:left}
+.days.times select{width:130px}
+.days input:disabled,.days select:disabled{opacity:.4;background:var(--line);cursor:not-allowed}
+.srow2{display:grid;grid-template-columns:auto auto auto 1fr;gap:6px;align-items:center;margin-bottom:6px;font-size:13px;color:var(--muted)}
+.srow2 input{width:110px}
+.bklist{display:grid;gap:4px}
+.bkrow{display:grid;grid-template-columns:minmax(150px,auto) 1fr auto;gap:10px;align-items:center;font-size:13.5px;border-bottom:1px solid var(--line);padding:4px 0}
+.srow .ctrls{display:flex;gap:3px}
+.ib{width:30px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--bg);padding:0}
+.ib.del{color:var(--danger)}
+.trow{display:grid;grid-template-columns:42px minmax(110px,1fr) 250px auto;gap:6px;align-items:center;margin-bottom:6px}
+.orow{display:grid;grid-template-columns:250px minmax(110px,1fr) auto auto;gap:6px;align-items:center;margin-bottom:6px}
+h3.sec{font-size:15px;margin:18px 0 6px}
+h3.sec:first-child{margin-top:0}
+.dbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:5px 10px;font-size:14px;white-space:nowrap;text-align:left}
+.dbtn:hover{border-color:var(--accent)}
+.trow .dbtn,.orow .dbtn{width:100%}
+.dbtn svg{width:16px;height:16px;color:var(--muted);flex:none}
+.users{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px;align-items:center;font-size:13px;color:var(--muted)}
+@media (max-width:560px){
+  .fields{grid-template-columns:1fr 1fr}
+  .fields .f:nth-child(2){grid-column:1 / -1}
+  .trow{grid-template-columns:42px 1fr auto}
+  .trow .dbtn{grid-column:1 / -1}
+  .orow{grid-template-columns:1fr auto auto}
+  .orow .dbtn{grid-column:1 / -1}
+  .srow{grid-template-columns:auto 42px 1fr 58px}
+  .srow .ctrls{grid-column:1 / -1;justify-content:flex-end}
+}
+.lbl{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+.danger{color:var(--danger)}
+
+/* selector de dates */
+.picker{position:fixed;z-index:1000;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.28);padding:12px;width:max-content;max-width:calc(100vw - 16px)}
+.pk-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pk-head .ib{width:34px;height:34px;font-size:16px}
+.pk-months{display:flex;gap:20px}
+.pk-month{width:266px}
+.pk-month h4{margin:0 0 6px;text-align:center;font-family:var(--display);font-size:16px}
+.pk-grid{display:grid;grid-template-columns:repeat(7,38px);gap:0}
+.pk-wh{font-size:11.5px;color:var(--muted);text-align:center;padding-bottom:4px}
+.pk-d{height:36px;border:0;background:none;border-radius:0;font-size:14px;position:relative;font-variant-numeric:tabular-nums}
+.pk-d.we{color:var(--muted)}
+.pk-d.off{color:var(--red);font-weight:700}
+.pk-d.ev{color:var(--ev);font-weight:700}
+.pk-d.out{opacity:.45}
+.pk-d.today::after{content:"";position:absolute;left:50%;bottom:4px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:currentColor}
+.pk-d:hover{background:color-mix(in srgb,var(--accent) 18%,transparent);border-radius:8px}
+.pk-d.in{background:color-mix(in srgb,var(--accent) 16%,var(--surface));border-radius:0}
+.pk-d.sa,.pk-d.sb{background:var(--accent);color:var(--surface);font-weight:700}
+.pk-d.sa{border-radius:8px 0 0 8px}
+.pk-d.sb{border-radius:0 8px 8px 0}
+.pk-d.sa.sb{border-radius:8px}
+.pk-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:13.5px}
+.pk-foot .pk-hint{color:var(--muted);margin-right:auto}
+@media (max-width:620px){ .pk-grid{grid-template-columns:repeat(7,minmax(34px,1fr))} .pk-month{width:auto;min-width:250px} }
+
+/* visita guiada */
+.tour{position:fixed;inset:0;z-index:3000;pointer-events:none}
+.tour.dim{background:rgba(8,15,20,.55)}
+.tour-hole{position:fixed;border-radius:8px;box-shadow:0 0 0 3px var(--accent),0 0 0 9999px rgba(8,15,20,.55);transition:left .2s,top .2s,width .2s,height .2s;pointer-events:none}
+.tour-card{position:fixed;pointer-events:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.35);padding:14px 16px;width:min(370px,calc(100vw - 16px));font-size:14.5px;line-height:1.45}
+.tour-card .tc-n{font-size:12px;color:var(--muted);margin-bottom:4px}
+.tour-card .tc-hint{color:var(--accent);font-weight:700;font-size:13px;margin-top:8px}
+.tour-card .tc-b{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.tour-hole{transition:none}}
+
+@page{size:A4 landscape;margin:9mm}
+@media print{
+  :root{--bg:#fff;--surface:#fff}
+  body{background:#fff;font-size:12px}
+  .top,dialog,.picker,.empty{display:none!important}
+  .phead{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px;font-family:var(--display)}
+  .phead h1{font-size:18px;margin:0}
+  .phead span{font-size:12px;color:var(--muted)}
+  .layout{display:block;padding:0}
+  .sum{position:static;max-height:none;overflow:visible;border:0;padding:0;break-before:page}
+  body:not(.print-sum) .sum{display:none!important}
+  .gridwrap{overflow:visible}
+  .v-month .grid,.v-week .grid{min-width:0}
+  .day,.chip,.ent,.dot,.sw,.badge,b{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .month{break-inside:avoid}
+  .v-term .day,.v-two .day{padding:1px 2px;gap:1px}
+  .v-term .dn{font-size:10px;line-height:1.05}
+  .v-term .chip{line-height:1.05;font-size:clamp(7.5px,min(calc((var(--h) - 14px - var(--lab,0) * 12px) / var(--n,1) * .6),calc(100cqi / (var(--len,12) * .6 + 1.4))),16px)}
+  .v-year .dn{font-size:9px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="toprow">
+    <h1>Sessions del curs</h1>
+    <span class="status" id="status"></span>
+    <div class="actions">
+      <button class="btn icon" id="tourBtn" type="button" aria-label="Visita guiada" title="Visita guiada"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.3-2.4 3.6"/><path d="M12 17h.01"/></svg></button>
+      <button class="btn icon" id="undoBtn" type="button" aria-label="Desfés (Ctrl+Z)" title="Desfés (Ctrl+Z)" disabled><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+      <button class="btn icon" id="redoBtn" type="button" aria-label="Refés (Ctrl+Y)" title="Refés (Ctrl+Y)" disabled><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+      <button class="btn icon" id="expBtn" type="button" aria-label="Exporta" title="Exporta"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></button>
+      <button class="btn icon" id="themeBtn" type="button" aria-label="Canvia entre mode clar i fosc" title="Mode clar o fosc"></button>
+      <button class="btn icon" id="printBtn" type="button" aria-label="Imprimeix" title="Imprimeix"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg></button>
+      <button class="btn" id="sumBtn" type="button" aria-pressed="true">Resum</button>
+      <button class="btn primary" id="openSet" type="button">Configuració</button>
+    </div>
+  </div>
+  <div class="navrow">
+    <div class="seg" id="views" role="group" aria-label="Vista">
+      <button type="button" data-v="week">Setmana</button><button type="button" data-v="month">Mes</button><button type="button" data-v="two">2 mesos</button><button type="button" data-v="term">Trimestre</button><button type="button" data-v="year">Curs</button>
+    </div>
+    <div class="nav">
+      <button class="ib" type="button" id="prev" aria-label="Anterior">‹</button>
+      <span class="navlbl" id="navlbl"></span>
+      <button class="ib" type="button" id="next" aria-label="Següent">›</button>
+      <button class="btn" type="button" id="goToday">Avui</button>
+    </div>
+  </div>
+  <div class="filebar" id="fileBar" hidden></div>
+  <div class="filters" id="filters"></div>
+</header>
+
+<main class="layout withsum" id="layout">
+  <section id="calwrap"><div class="phead" id="phead"></div><div id="cal" aria-label="Calendari"></div></section>
+  <aside class="sum" id="sum" aria-label="Resum"></aside>
+</main>
+
+<dialog id="dayDlg" aria-labelledby="dayTitle"><div id="dayIn"></div></dialog>
+<dialog id="setDlg" aria-labelledby="setTitle">
+  <div class="dhead"><div><h2 id="setTitle">Configuració</h2><p>Els canvis s'apliquen i es desen al moment.</p></div><button class="btn" type="button" data-close>Tanca</button></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="dbody" id="setIn"></div>
+</dialog>
+<dialog id="prDlg" class="small" aria-labelledby="prTitle">
+  <div class="dhead"><div><h2 id="prTitle">Imprimeix</h2><p>Sempre amb fons blanc. Es respecta el filtre de grups.</p></div><button class="btn" type="button" data-close>Tanca</button></div>
+  <div class="dbody">
+    <label class="lbl" for="prView">Què vols imprimir</label>
+    <select id="prView"></select>
+    <p class="hint" id="prWhat"></p>
+    <label class="chk" style="margin-top:14px"><input type="checkbox" id="prSum"> Inclou el resum (en una pàgina a banda)</label>
+    <div class="row" style="margin-top:16px"><button type="button" class="btn primary" id="prGo">Imprimeix</button></div>
+  </div>
+</dialog>
+<dialog id="expDlg" class="small" aria-labelledby="exTitle">
+  <div class="dhead"><div><h2 id="exTitle">Exporta</h2><p>Es respecta el filtre de grups.</p></div><button class="btn" type="button" data-close>Tanca</button></div>
+  <div class="dbody">
+    <h3 class="sec">Temporalització</h3>
+    <p class="hint" style="margin-top:0">Full de càlcul amb l'inici, el final i les sessions per trimestre de cada SdA, i els totals de cada grup. S'obri amb Excel o Google Sheets.</p>
+    <button type="button" class="btn primary" data-ex="temporal" style="margin-top:6px">Descarrega la temporalització (.csv)</button>
+    <h3 class="sec">Calendari</h3>
+    <label class="lbl" for="exWhat">Què vols posar al calendari</label>
+    <select id="exWhat"><option value="sda">L'inici i el final de cada SdA (dies sencers)</option><option value="class">Cada classe, amb el contingut de la sessió</option></select>
+    <label class="lbl" for="exFmt">Format</label>
+    <select id="exFmt"></select>
+    <p class="hint">Les classes amb hora d'inici ocupen la durada de les sessions; les altres van com a esdeveniment de dia sencer. A Google Calendar: Configuració > Importa i exporta > Importa, i tria un calendari a banda per a poder esborrar-lo de colp.</p>
+    <button type="button" class="btn primary" data-ex="cal" style="margin-top:8px">Descarrega el calendari</button>
+  </div>
+</dialog>
+<dialog id="ncDlg" class="small" aria-labelledby="ncTitle">
+  <div class="dhead"><div><h2 id="ncTitle">Comença un curs nou</h2></div><button class="btn" type="button" data-close>Tanca</button></div>
+  <div class="dbody" id="ncIn"></div>
+</dialog>
+<input type="file" id="impFile" accept=".json,application/json" hidden>
+
+<script>
+(function(){
+"use strict";
+const DAY = 864e5;
+const MESOS = ["gener","febrer","març","abril","maig","juny","juliol","agost","setembre","octubre","novembre","desembre"];
+const MCURT = ["gen","febr","març","abr","maig","juny","jul","ag","set","oct","nov","des"];
+const DS = ["dl","dt","dc","dj","dv"];
+const DS7 = ["dl","dt","dc","dj","dv","ds","dg"];
+const DLL = ["dilluns","dimarts","dimecres","dijous","divendres","dissabte","diumenge"];
+const PAL_SDA = ["#2F6FDE","#E0662F","#1E9E6A","#C23FA0","#D9A100","#138A9E","#6E8A1F","#8B5A3C"];
+const PAL_G = ["#22466A","#8C2F39","#2E6B4F","#5B3F8C","#7A5A12","#1F6C7A","#4A4F55","#B0408A"];
+const PAL_T = ["#3D7BD9","#E39B1B","#3FA45B","#C2507F"];
+const VIEWS = {week:"Setmana", month:"Mes", two:"2 mesos", term:"Trimestre", year:"Curs"};
+const UIKEY = "sessions-curs-ui";
+const CAL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>';
+const SUN_SVG = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+const MOON_SVG = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const D = s => { const [y,m,d] = s.split("-").map(Number); return Date.UTC(y, m-1, d); };
+const S = t => new Date(t).toISOString().slice(0,10);
+const wd = t => (new Date(t).getUTCDay() + 6) % 7;
+const addD = (s, n) => S(D(s) + n*DAY);
+const monday = s => addD(s, -wd(D(s)));
+const mStart = s => s.slice(0,8) + "01";
+const addM = (s, n) => { const c = new Date(D(s)); return S(Date.UTC(c.getUTCFullYear(), c.getUTCMonth() + n, 1)); };
+const uid = () => Math.random().toString(36).slice(2,9);
+const key = (g, d) => g + "__" + d;
+const isDate = s => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+const isColor = s => typeof s === "string" && /^#[0-9a-fA-F]{6}$/.test(s);
+const now = new Date();
+const TODAY = S(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+const fmtS = s => { const t = new Date(D(s)); return t.getUTCDate() + " " + MCURT[t.getUTCMonth()]; };
+const fmtY = s => fmtS(s) + " " + s.slice(0,4);
+const fmtR = (a, b) => a === b ? fmtY(a) : (a.slice(0,4) === b.slice(0,4) ? fmtS(a) + " – " + fmtY(b) : fmtY(a) + " – " + fmtY(b));
+const deM = m => /^[aeiouàèéíòóú]/i.test(MESOS[m]) ? "d'" : "de ";
+const fmtL = s => { const t = new Date(D(s)); const m = t.getUTCMonth(); return DLL[wd(D(s))] + " " + t.getUTCDate() + " " + deM(m) + MESOS[m] + " de " + t.getUTCFullYear(); };
+function onColor(hex){
+  if (!isColor(hex)) return "#fff";
+  const c = [1,3,5].map(i => parseInt(hex.slice(i, i+2), 16) / 255).map(v => v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4));
+  const L = .2126*c[0] + .7152*c[1] + .0722*c[2];
+  return L > .38 ? "#17252C" : "#FFFFFF";
+}
+const gv = g => `--g:${esc(g.color)};--gt:${onColor(g.color)}`;
+
+/* ---------- estat ---------- */
+/* Curs per defecte: el que toca segons la data d'avui. Per al 2026-27 hi ha les dates oficials;
+   per a altres cursos són aproximades (cal revisar-les amb el calendari de Conselleria). */
+function easter(y){
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  return S(Date.UTC(y, month - 1, day));
+}
+function courseYear(){ const d = new Date(); return d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1; }
+function defaultState(y){
+  y = y || courseYear();
+  const f = (yy, m, d) => S(Date.UTC(yy, m - 1, d));
+  let start, end, terms, off;
+  if (y === 2026){
+    start = "2026-09-09"; end = "2027-06-18";
+    terms = [["2026-09-09","2026-12-21"],["2027-01-07","2027-03-24"],["2027-04-06","2027-06-18"]];
+    off = [["2026-10-09","2026-10-09","9 d'Octubre"],["2026-10-12","2026-10-12","Festa nacional"],["2026-12-08","2026-12-08","Immaculada"],["2026-12-22","2027-01-06","Nadal"],["2027-03-19","2027-03-19","Sant Josep"],["2027-03-25","2027-04-05","Pasqua"]];
+  } else {
+    const ea = easter(y + 1);
+    start = f(y, 9, 8); end = f(y + 1, 6, 19);
+    terms = [[start, f(y, 12, 22)], [f(y + 1, 1, 7), addD(ea, -4)], [addD(ea, 9), end]];
+    off = [[f(y,10,9),f(y,10,9),"9 d'Octubre"],[f(y,10,12),f(y,10,12),"Festa nacional"],[f(y,11,1),f(y,11,1),"Tots Sants"],[f(y,12,6),f(y,12,6),"Constitució"],[f(y,12,8),f(y,12,8),"Immaculada"],[f(y,12,23),f(y+1,1,6),"Nadal"],[f(y+1,3,19),f(y+1,3,19),"Sant Josep"],[addD(ea,-3),addD(ea,8),"Pasqua"],[f(y+1,5,1),f(y+1,5,1),"Dia del Treball"]];
+  }
+  return {
+    v:4, start, end,
+    terms: terms.map(([a,b], i) => ({name:["1r","2n","3r"][i] + " trimestre", start:a, end:b, color:PAL_T[i]})),
+    off: off.map(([a,b,l]) => ({from:a, to:b, label:l, kind:"fest"})),
+    evals:{}, plans:[], groups:[], sdas:[], ov:{}, notes:{}, dur:55, slots:[]
+  };
+}
+const isTime = s => typeof s === "string" && /^\d{2}:\d{2}$/.test(s);
+function normalize(o){
+  const d = defaultState();
+  if (!o || typeof o !== "object") return d;
+  const plans = Array.isArray(o.plans) ? o.plans.filter(p => p && p.id).map(p => ({id:String(p.id), name:String(p.name||"")})) : [];
+  let groups = Array.isArray(o.groups) ? o.groups.filter(g => g && g.id).map((g,i) => ({id:String(g.id), name:String(g.name||"").trim(), code:String(g.code||"").trim(), color: isColor(g.color) ? g.color : PAL_G[i%PAL_G.length], plan:String(g.plan||""), days:[0,1,2,3,4].map(k => Math.max(0, Math.min(6, +((g.days||[])[k])||0))), times:[0,1,2,3,4].map(k => isTime((g.times||[])[k]) ? g.times[k] : "")})) : [];
+  groups = groups.filter(g => g.code || g.name || g.days.some(x => x > 0));
+  const sdas = Array.isArray(o.sdas) ? o.sdas.filter(x => x && x.id).map(x => ({id:String(x.id), pid:String(x.pid||""), gid:String(x.gid||""), name:String(x.name||""), n:Math.max(0, +x.n||0), color: isColor(x.color) ? x.color : PAL_SDA[0], ses: Array.isArray(x.ses) ? x.ses.slice(0, 300).map(v => String(v ?? "")) : [], after: isDate(x.after) ? x.after : ""})) : [];
+  for (const g of groups){
+    if (plans.some(p => p.id === g.plan)) continue;
+    const id = "p" + g.id;
+    if (!plans.some(p => p.id === id)) plans.push({id, name:""});
+    g.plan = id;
+    sdas.forEach(s => { if (!s.pid && s.gid === g.id) s.pid = id; });
+  }
+  return {
+    v:4,
+    start: isDate(o.start) ? o.start : d.start,
+    end: isDate(o.end) ? o.end : d.end,
+    terms: Array.isArray(o.terms) ? o.terms.filter(t => t && isDate(t.start) && isDate(t.end)).map((t,i) => ({name:String(t.name||"Trimestre"), start:t.start, end:t.end, color: isColor(t.color) ? t.color : PAL_T[i % PAL_T.length]})) : d.terms,
+    off: (Array.isArray(o.off) ? o.off : d.off).filter(r => r && isDate(r.from) && isDate(r.to)).map(r => ({from:r.from, to:r.to, label:String(r.label||""), kind: r.kind === "inc" ? "inc" : "fest"})),
+    evals: (o.evals && typeof o.evals === "object" && !Array.isArray(o.evals)) ? Object.fromEntries(Object.entries(o.evals).filter(([k]) => isDate(k)).map(([k,v]) => [k, String(v||"")])) : {},
+    plans, groups,
+    sdas: sdas.filter(s => plans.some(p => p.id === s.pid)).map(({id,pid,name,n,color,ses,after}) => ({id,pid,name,n,color,ses,after})),
+    ov: (o.ov && typeof o.ov === "object") ? o.ov : {},
+    notes: (o.notes && typeof o.notes === "object") ? o.notes : {},
+    dur: Math.max(10, Math.min(240, parseInt(o.dur, 10) || 55)),
+    slots: Array.isArray(o.slots) ? o.slots.filter(x => x && isTime(x.s)).map(x => ({s:x.s, e: isTime(x.e) ? x.e : ""})).sort((a,b) => a.s < b.s ? -1 : 1) : []
+  };
+}
+
+let state = defaultState();
+let CALC = {byDate:{}, per:{}};
+let ui = {view:"month", showSum:true, theme:null};
+let sel = new Set();
+try {
+  const u = JSON.parse(localStorage.getItem(UIKEY) || "{}");
+  if (VIEWS[u.view]) ui.view = u.view;
+  if (typeof u.showSum === "boolean") ui.showSum = u.showSum;
+  if (u.theme === "light" || u.theme === "dark") ui.theme = u.theme;
+  if (Array.isArray(u.sel)) sel = new Set(u.sel);
+} catch(e){}
+const saveUi = () => { try { localStorage.setItem(UIKEY, JSON.stringify({...ui, sel:[...sel]})); } catch(e){} };
+let cursor = TODAY;
+let saveTimer = null, writing = false, pending = false, dirty = false;
+let curDay = null, setTab = "grups", sdaPlan = null, printing = false;
+let ng = null;
+
+/* ---------- càlcul ---------- */
+const offAt = ds => state.off.find(r => ds >= r.from && ds <= r.to) || null;
+const termAt = ds => state.terms.findIndex(t => ds >= t.start && ds <= t.end);
+const grp = id => state.groups.find(g => g.id === id);
+const plan = id => state.plans.find(p => p.id === id);
+const sdasP = pid => state.sdas.filter(s => s.pid === pid);
+const sdasOf = gid => { const g = grp(gid); return g ? sdasP(g.plan) : []; };
+const usersOf = pid => state.groups.filter(g => g.plan === pid);
+const planLabel = p => p.name || (usersOf(p.id).length ? "SdA de " + usersOf(p.id).map(g => g.code || g.name).join(", ") : "Programació sense grups");
+const gcode = g => esc(g.code || (g.name || "?").slice(0,3));
+const clampCourse = s => s < state.start ? state.start : s > state.end ? state.end : s;
+const shown = gid => sel.size === 0 || sel.has(gid);
+const cleanSel = () => { for (const id of [...sel]) if (!grp(id)) sel.delete(id); };
+function prunePlans(){
+  state.plans = state.plans.filter(p => usersOf(p.id).length || sdasP(p.id).length);
+}
+
+function compute(){
+  const byDate = {}, per = {};
+  const push = (ds, e) => (byDate[ds] = byDate[ds] || []).push(e);
+  const st = D(state.start), en = D(state.end);
+  const nT = state.terms.length;
+  for (const g of state.groups){
+    const list = sdasOf(g.id);
+    let si = 0, k = 0;
+    const skip = () => { while (si < list.length && !(list[si].n > 0)) si++; };
+    skip();
+    const tc = new Array(nT).fill(0), ranges = {}, lost = {cancel:{}, off:{}};
+    let total = 0, lostN = 0;
+    const addLost = (type, why, n) => { lost[type][why] = (lost[type][why] || 0) + n; lostN += n; };
+    if (st <= en) for (let t = st; t <= en; t += DAY){
+      const w = wd(t); if (w > 4) continue;
+      const ds = S(t);
+      const base = g.days[w] || 0;
+      const off = offAt(ds);
+      if (off){ if (base > 0 && off.kind === "inc") addLost("off", off.label || "Activitat o imprevist", base); continue; }
+      const o = state.ov[key(g.id, ds)];
+      const n = o ? (+o.n || 0) : base;
+      if (n < base) addLost("cancel", (o && o.note) || "Sense motiu", base - n);
+      if (n <= 0){ if (base > 0) push(ds, {gid:g.id, cancel:true, note:(o && o.note) || "", time:g.times[w] || ""}); continue; }
+      const ti = termAt(ds), slots = [];
+      for (let j = 0; j < n; j++){
+        total++;
+        let tri = null;
+        if (ti >= 0){ tc[ti]++; tri = tc[ti]; }
+        const s = list[si];
+        if (s && !(k === 0 && s.after && ds < s.after)){
+          k++;
+          const r = ranges[s.id] || (ranges[s.id] = {from:ds, c:0, tc:new Array(nT).fill(0)});
+          r.to = ds; r.c++; if (ti >= 0) r.tc[ti]++;
+          const last = k >= s.n;
+          slots.push({sid:s.id, k, of:s.n, tri, c:total, last});
+          if (last){ r.complete = true; si++; k = 0; skip(); }
+        } else slots.push({free:true, tri, c:total});
+      }
+      push(ds, {gid:g.id, slots, note:(o && o.note) || "", extra: base === 0, time:g.times[w] || ""});
+    }
+    per[g.id] = {tc, total, ranges, planned: list.reduce((a,s) => a + (+s.n||0), 0), lost, lostN};
+  }
+  const tk = e => e.time || "99";
+  for (const ds in byDate) byDate[ds].sort((a,b) => tk(a) < tk(b) ? -1 : tk(a) > tk(b) ? 1 : 0);
+  CALC = {byDate, per};
+}
+
+/* ---------- render del calendari ---------- */
+const range = a => a.length > 1 ? a[0] + "–" + a[a.length-1] : String(a[0]);
+function runsOf(e){
+  const runs = [];
+  for (const sl of e.slots){
+    const last = runs[runs.length-1];
+    if (last && ((sl.free && last[0].free) || (!sl.free && last[0].sid === sl.sid))) last.push(sl); else runs.push([sl]);
+  }
+  return runs;
+}
+function runInfo(g, run){
+  const list = sdasOf(g.id);
+  const f = run[0];
+  const s = f.free ? null : list.find(x => x.id === f.sid);
+  const idx = s ? list.indexOf(s) + 1 : 0;
+  const tr = run.map(x => x.tri).filter(x => x != null);
+  const cs = run.map(x => x.c);
+  return {
+    s, idx,
+    num: s ? range(run.map(x => x.k)) + "/" + s.n : "",
+    cRange: range(cs),
+    tRange: tr.length ? range(tr) : "",
+    sameTC: tr.length === cs.length && tr.every((x,i) => x === cs[i]),
+    end: run.some(x => x.last),
+    color: s ? s.color : "#8A9399",
+    ses: s ? run.map(x => ({k:x.k, t:(s.ses || [])[x.k-1] || ""})).filter(x => x.t) : []
+  };
+}
+const fmtT = t => t ? String(+t.slice(0,2)) + ":" + t.slice(3,5) : "";
+function slotIdx(t){ return state.slots.findIndex(x => x.s === t); }
+function endOf(t, n){ const i = slotIdx(t); const l = i >= 0 ? state.slots[i + n - 1] : null; return l && l.e ? l.e : addMin(t, state.dur * n); }
+function nextStart(t, n){ const i = slotIdx(t); return i >= 0 && state.slots[i + n] ? state.slots[i + n].s : endOf(t, n); }
+const fmtSlot = x => fmtT(x.s) + (x.e ? "–" + fmtT(x.e) : "");
+function addMin(t, m){ const v = +t.slice(0,2) * 60 + +t.slice(3,5) + m; return String(Math.floor(v / 60) % 24).padStart(2,"0") + ":" + String(v % 60).padStart(2,"0"); }
+function tip(g, i, e){
+  let t = (g.name || g.code) + ": " + (i.s ? "SdA " + i.idx + (i.s.name ? " " + i.s.name : "") + ", sessió " + i.num : "sessió sense SdA");
+  t += ". Sessió " + i.cRange + " del curs" + (i.tRange ? ", " + i.tRange + " del trimestre" : "");
+  if (i.ses.length) t += ". " + i.ses.map(x => (i.ses.length > 1 ? x.k + ": " : "") + x.t).join(" / ");
+  if (e.time) t = fmtT(e.time) + " " + t;
+  if (e.note) t += ". Nota: " + e.note;
+  return esc(t);
+}
+function entryHTML(e, level){
+  const g = grp(e.gid); if (!g) return "";
+  const gs = gv(g);
+  if (e.cancel){
+    const t = esc((g.name || g.code) + ": no es fa" + (e.note ? " (" + e.note + ")" : ""));
+    if (level === "year") return `<span class="dot x" title="${t}"></span>`;
+    if (level === "week") return `<div class="ent x" style="${gs}"><div class="eh"><b>${gcode(g)}</b>No es fa${e.time ? `<span class="tm">${fmtT(e.time)}</span>` : ""}</div>${e.note ? `<div class="note">${esc(e.note)}</div>` : ""}</div>`;
+    return `<span class="chip x" style="${gs}" title="${t}"><b>${gcode(g)}</b><span>${level === "term" || level === "two" ? "✕" : "no es fa"}</span></span>`;
+  }
+  const allRuns = runsOf(e);
+  return allRuns.map((run, ri) => {
+    const i = runInfo(g, run);
+    const st = `${gs};--c:${esc(i.color)}`;
+    const cls = (i.end ? " end" : "") + (e.extra ? " plus" : "");
+    if (level === "year") return `<span class="dot${i.end ? " end" : ""}" style="${st}" title="${tip(g,i,e)}"></span>`;
+    if (level === "week"){
+      const head = i.s ? `SdA${i.idx}${i.s.name ? " " + esc(i.s.name) : ""}` : "Sessió del curs";
+      const big = i.s ? `Sessió ${range(run.map(x => x.k))} de ${i.s.n}${i.end ? ", última" : ""}` : "S" + i.cRange;
+      let meta;
+      if (i.s) meta = `Sessió ${i.cRange} del curs` + (i.tRange && !i.sameTC ? `, ${i.tRange} del trimestre` : "");
+      else meta = i.tRange && !i.sameTC ? `Sessió ${i.tRange} del trimestre` : "";
+      const sesH = i.ses.length ? `<div class="ses">${i.ses.map(x => `<div>${run.length > 1 ? `<b>${x.k}.</b> ` : ""}${esc(x.t)}</div>`).join("")}</div>` : "";
+      let tm = "";
+      if (e.time){ let st0 = e.time; for (let q = 0; q < ri; q++) st0 = nextStart(st0, allRuns[q].length); tm = `<span class="tm">${fmtT(st0)}–${fmtT(endOf(st0, run.length))}</span>`; }
+      return `<div class="ent${i.end ? " end" : ""}" style="${st}"><div class="eh"><b>${gcode(g)}</b>${head}${e.extra ? " (classe afegida)" : ""}${tm}</div><div class="en">${big}</div>${sesH}${meta ? `<div class="em">${meta}</div>` : ""}${e.note ? `<div class="note">${esc(e.note)}</div>` : ""}</div>`;
+    }
+    const code = g.code || (g.name || "?").slice(0,3);
+    if (level === "term" || level === "two"){
+      const txt = i.s ? i.num : "S" + i.cRange;
+      return `<span class="chip${cls}" style="${st};--len:${code.length + txt.length + 2}" title="${tip(g,i,e)}"><b>${gcode(g)}</b><span>${txt}</span></span>`;
+    }
+    const tt = i.tRange && !(i.sameTC && !i.s) ? "T" + i.tRange : "";
+    const len = code.length + (i.s ? ("SdA" + i.idx + i.num).length + 1 : ("S" + i.cRange).length) + tt.length + 3;
+    return `<span class="chip${cls}" style="${st};--len:${len}" title="${tip(g,i,e)}"><b>${gcode(g)}</b>${i.s ? `<i>SdA${i.idx}</i><span>${i.num}</span>` : `<i>S${i.cRange}</i>`}<em>${tt}</em></span>`;
+  }).join("");
+}
+
+function renderDay(ds, level, termIdx){
+  const day = +ds.slice(8);
+  const dlabel = level === "week" ? DLL[wd(D(ds))] + " " + fmtS(ds) : day;
+  if (ds < state.start || ds > state.end){
+    if (ds in state.evals){
+      const lb = state.evals[ds] || "Avaluació";
+      return `<button type="button" class="day eval${ds === TODAY ? " today" : ""}" style="--n:1;--lab:1" data-d="${ds}" aria-label="${esc(fmtL(ds) + ", " + lb)}"${level === "year" ? ` title="${esc(fmtL(ds) + ", " + lb)}"` : ""}><span class="dn"><span>${dlabel}</span></span><span class="evl">${esc(lb)}</span></button>`;
+    }
+    return `<div class="day out" aria-hidden="true"><span class="dn">${dlabel}</span></div>`;
+  }
+  const off = offAt(ds), ti = termAt(ds), ev = state.evals[ds];
+  let cls = "day", style = "";
+  if (ti >= 0) style = `--tc:${esc(state.terms[ti].color)}`; else cls += " notterm";
+  if (ev != null) cls += " eval";
+  if (off) cls += off.kind === "inc" ? " off inc" : " off";
+  if (ds === TODAY) cls += " today";
+  if (termIdx != null && ti !== termIdx && ev == null) cls += " dim";
+  let mark = "";
+  if (level !== "year") state.terms.forEach((t,i) => { if (t.start === ds) mark = `<span class="tmark">inici T${i+1}</span>`; else if (t.end === ds) mark = `<span class="tmark">fi T${i+1}</span>`; });
+  let inner = `<span class="dn"><span>${level === "week" ? DLL[wd(D(ds))] + " " + fmtS(ds) : day}</span>${mark}${state.notes[ds] && level !== "week" ? `<span class="nt" title="${esc(state.notes[ds])}"></span>` : ""}</span>`;
+  if (off) inner += `<span class="offl">${esc(off.label || "No lectiu")}</span>`;
+  if (ev != null) inner += `<span class="evl">${esc(ev || "Avaluació")}</span>`;
+  if (!off){
+    const es = (CALC.byDate[ds] || []).filter(e => shown(e.gid));
+    const n = es.reduce((a,e) => a + (e.cancel ? 1 : runsOf(e).length), 0);
+    style += `${style ? ";" : ""}--n:${Math.max(1, n)};--lab:${ev != null ? 1 : 0}`;
+    if (level === "year") inner += `<span class="dots">${es.map(e => entryHTML(e, level)).join("")}</span>`;
+    else inner += es.map(e => entryHTML(e, level)).join("");
+  }
+  if (level === "week" && state.notes[ds]) inner += `<div class="daynote">${esc(state.notes[ds])}</div>`;
+  const tt = esc(fmtL(ds) + (off ? ", " + (off.label || "no lectiu") : "") + (ev != null ? ", " + (ev || "avaluació") : ""));
+  return `<button type="button" class="${cls}" style="${style}" data-d="${ds}" aria-label="${tt}"${level === "year" ? ` title="${tt}"` : ""}>${inner}</button>`;
+}
+
+function renderMonth(y, m, level, termIdx){
+  let cells = "", started = false, count = 0;
+  const dim = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+  for (let d = 1; d <= dim; d++){
+    const t = Date.UTC(y, m, d), w = wd(t);
+    if (w > 4) continue;
+    if (!started){ cells += '<div class="blank"></div>'.repeat(w); count += w; started = true; }
+    cells += renderDay(S(t), level, termIdx); count++;
+  }
+  const weeks = Math.ceil(count / 5);
+  return `<section class="month" data-w="${weeks}"><h2>${MESOS[m]}<span>${y}</span></h2><div class="gridwrap"><div class="grid">${DS.map(x => `<div class="wh">${x}</div>`).join("")}${cells}</div></div></section>`;
+}
+function monthsBetween(a, b){
+  const out = []; const A = new Date(D(a)), B = new Date(D(b));
+  let y = A.getUTCFullYear(), m = A.getUTCMonth(); const ey = B.getUTCFullYear(), em = B.getUTCMonth();
+  let guard = 0;
+  while ((y < ey || (y === ey && m <= em)) && guard++ < 40){ out.push([y,m]); m++; if (m > 11){ m = 0; y++; } }
+  return out;
+}
+function dist(n, r){ const b = Math.floor(n / r), x = n % r; return Array.from({length:r}, (_, i) => b + (i < x ? 1 : 0)).filter(Boolean); }
+function rowsHTML(months, counts, level, termIdx){
+  let h = "", i = 0;
+  for (const k of counts){
+    h += `<div class="mrow" style="--k:${k}">${months.slice(i, i + k).map(([y,m]) => renderMonth(y, m, level, termIdx)).join("")}</div>`;
+    i += k;
+  }
+  return `<div class="mrows">${h}</div>`;
+}
+function curTermIdx(){
+  let i = termAt(cursor);
+  if (i >= 0) return i;
+  if (!state.terms.length) return -1;
+  i = state.terms.findIndex(t => t.start > cursor);
+  return i >= 0 ? i : state.terms.length - 1;
+}
+function viewLabel(v){
+  if (v === "week"){
+    const mon = monday(cursor), fri = addD(mon, 4);
+    const a = new Date(D(mon)), b = new Date(D(fri));
+    return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()}–${b.getUTCDate()} ${MCURT[b.getUTCMonth()]}` : `${fmtS(mon)} – ${fmtS(fri)}`;
+  }
+  if (v === "month"){ const c = new Date(D(cursor)); return MESOS[c.getUTCMonth()] + " " + c.getUTCFullYear(); }
+  if (v === "two"){ const a = new Date(D(cursor)), b = new Date(D(addM(cursor, 1))); return MESOS[a.getUTCMonth()] + " i " + MESOS[b.getUTCMonth()] + " " + b.getUTCFullYear(); }
+  if (v === "term"){ const i = curTermIdx(); return i >= 0 ? state.terms[i].name : "Sense trimestres"; }
+  return "Curs " + state.start.slice(0,4) + "-" + state.end.slice(2,4);
+}
+
+function renderCal(){
+  let html = "";
+  if (!state.groups.length) html += `<div class="empty"><p>Encara no hi ha cap grup. Afig-ne un amb els dies que hi tens classe i el calendari es numerarà sol.</p><button class="btn primary" type="button" data-open="grups">Afig el primer grup</button></div>`;
+  const v = ui.view;
+  if (v === "week"){
+    const mon = monday(cursor);
+    let cells = "";
+    for (let i = 0; i < 5; i++) cells += renderDay(addD(mon, i), "week");
+    html += `<div class="mrows"><div class="mrow wk" style="--k:1"><div class="gridwrap"><div class="grid">${cells}</div></div></div></div>`;
+  } else if (v === "month"){
+    const c = new Date(D(cursor));
+    html += rowsHTML([[c.getUTCFullYear(), c.getUTCMonth()]], [1], "month");
+  } else if (v === "two"){
+    const a = new Date(D(cursor)), b = new Date(D(addM(cursor, 1)));
+    html += rowsHTML([[a.getUTCFullYear(), a.getUTCMonth()], [b.getUTCFullYear(), b.getUTCMonth()]], [2], "two");
+  } else if (v === "term"){
+    const i = curTermIdx();
+    if (i < 0) html += `<p>No hi ha trimestres definits.</p>`;
+    else {
+      const ms = monthsBetween(state.terms[i].start, state.terms[i].end);
+      html += rowsHTML(ms, dist(ms.length, ms.length <= 3 ? 1 : 2), "term", i);
+    }
+  } else if (state.start <= state.end){
+    const ed = Object.keys(state.evals).sort();
+    const first = ed.length && ed[0] < state.start ? ed[0] : state.start;
+    const last = ed.length && ed[ed.length-1] > state.end ? ed[ed.length-1] : state.end;
+    const ms = monthsBetween(first, last);
+    html += rowsHTML(ms, dist(ms.length, ms.length <= 4 ? 1 : ms.length <= 8 ? 2 : 3), "year");
+  }
+  const cal = $("#cal");
+  cal.className = "v-" + v;
+  cal.innerHTML = html;
+  $("#navlbl").textContent = viewLabel(v);
+  $("#prev").hidden = $("#next").hidden = v === "year";
+  document.querySelectorAll("#views [data-v]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+  const names = state.groups.filter(g => shown(g.id)).map(g => g.code || g.name).join(", ");
+  $("#phead").innerHTML = `<h1>${esc(viewLabel(v))}</h1><span>${esc(names)}</span>`;
+  layout();
+}
+
+/* Altura de les cel·les perquè la vista ocupe tota la finestra */
+function layout(availOverride){
+  const cal = $("#cal");
+  const rows = [...cal.querySelectorAll(".mrow")];
+  if (!rows.length) return;
+  const narrow = window.innerWidth < 760 && availOverride == null;
+  const v = ui.view;
+  const minH = {week:300, month:90, two:60, term:40, year:24}[v];
+  const gap = v === "year" ? 2 : v === "week" ? 8 : 4;
+  if (narrow){ rows.forEach(r => r.style.setProperty("--h", minH + "px")); return; }
+  let avail;
+  if (availOverride != null) avail = availOverride - ($("#phead").offsetHeight || 0);
+  else {
+    const topH = $(".top").getBoundingClientRect().height;
+    const empty = cal.querySelector(".empty");
+    avail = window.innerHeight - topH - 30 - (empty ? empty.offsetHeight + 16 : 0);
+  }
+  const rowAvail = (avail - 14 * (rows.length - 1)) / rows.length;
+  for (const r of rows){
+    if (r.classList.contains("wk")){ r.style.setProperty("--h", Math.max(minH, rowAvail - 4) + "px"); continue; }
+    const ms = [...r.querySelectorAll(".month")];
+    const weeks = Math.max(...ms.map(m => +m.dataset.w || 5));
+    const m0 = ms[0];
+    const h2 = m0.querySelector("h2"), wh = m0.querySelector(".wh");
+    const head = h2.offsetHeight + parseFloat(getComputedStyle(h2).marginBottom) + wh.offsetHeight + gap;
+    const cell = (rowAvail - head - gap * (weeks - 1)) / weeks;
+    r.style.setProperty("--h", Math.max(minH, Math.floor(cell)) + "px");
+  }
+}
+
+function move(dir){
+  const v = ui.view;
+  if (v === "week") cursor = addD(monday(cursor), 7*dir);
+  else if (v === "month" || v === "two") cursor = addM(cursor, dir);
+  else if (v === "term"){ const i = Math.max(0, Math.min(state.terms.length - 1, curTermIdx() + dir)); if (state.terms[i]) cursor = state.terms[i].start; }
+  renderCal();
+}
+
+function renderFilters(){
+  let h = `<button class="fbtn" type="button" data-f="all" aria-pressed="${sel.size === 0}">Tots</button>`;
+  for (const g of state.groups) h += `<button class="fbtn" type="button" data-f="${esc(g.id)}" aria-pressed="${sel.has(g.id)}" style="${gv(g)}" title="${esc(g.name)}"><i></i>${gcode(g)}</button>`;
+  h += `<div class="legend">${state.terms.map(t => `<span><i class="sw" style="background:color-mix(in srgb,${esc(t.color)} 45%,var(--surface))"></i>${esc(t.name)}</span>`).join("")}<span><i class="sw" style="background:color-mix(in srgb,var(--ev) 45%,var(--surface));border-color:var(--ev)"></i>Avaluació</span><span><i class="sw" style="background:color-mix(in srgb,var(--red) 45%,var(--surface));border-color:var(--red)"></i>Festiu</span><span><i class="sw" style="background:color-mix(in srgb,var(--inc) 45%,var(--surface));border-color:var(--inc)"></i>Activitat o imprevist</span><span><i class="sw" style="border:2px solid var(--muted)"></i>Última sessió de la SdA</span></div>`;
+  $("#filters").innerHTML = h;
+}
+
+function renderSum(force){
+  const sum = $("#sum");
+  const on = ui.showSum || force;
+  sum.hidden = !on;
+  $("#layout").classList.toggle("withsum", ui.showSum);
+  $("#sumBtn").setAttribute("aria-pressed", String(ui.showSum));
+  if (!on) return;
+  const gs = state.groups.filter(g => shown(g.id));
+  if (!gs.length){ sum.innerHTML = `<h2>Resum</h2><p class="hint">Quan afiges grups, ací veuràs les sessions de cada trimestre i quan acaba cada SdA.</p>`; return; }
+  let h = `<h2>Resum</h2>`;
+  for (const g of gs){
+    const p = CALC.per[g.id] || {tc:[], total:0, ranges:{}, planned:0};
+    const list = sdasOf(g.id);
+    const bal = p.total - p.planned;
+    const inT = p.tc.reduce((a,b) => a+b, 0);
+    h += `<div class="gsum" style="${gv(g)}"><h3><b>${gcode(g)}</b>${esc(g.name)}</h3>`;
+    h += `<table class="tc"><tr>${state.terms.map((t,i) => `<th title="${esc(t.name)}">T${i+1}</th>`).join("")}<th>Curs</th></tr><tr>${state.terms.map((t,i) => `<td>${p.tc[i] || 0}</td>`).join("")}<td class="tot">${p.total}</td></tr></table>`;
+    if (p.total > inT) h += `<p class="hint">${p.total - inT} sessions cauen fora de les dates dels trimestres.</p>`;
+    if (list.length) h += `<p class="bal${bal < 0 ? " neg" : ""}">${p.planned} sessions planificades en SdA. ${bal >= 0 ? `Sobren ${bal}.` : `Falten ${-bal} sessions per a encabir-ho tot.`}</p>`;
+    h += `<ul class="slist">${list.map((s,i) => {
+      const r = p.ranges[s.id];
+      let dt;
+      if (!(s.n > 0)) dt = `<span class="dt">0 sessions</span>`;
+      else if (!r) dt = `<span class="dt warn">no hi cap</span>`;
+      else if (!r.complete) dt = `<span class="dt warn">${fmtS(r.from)}: només ${r.c} de ${s.n}</span>`;
+      else { const t1 = termAt(r.from), t2 = termAt(r.to); dt = `<span class="dt">${fmtS(r.from)} – ${fmtS(r.to)}${t1 >= 0 ? ` (T${t1+1}${t2 !== t1 && t2 >= 0 ? "–" + (t2+1) : ""})` : ""}</span>`; }
+      return `<li style="--c:${esc(s.color)}"><span class="sdot"></span><span><b>SdA${i+1}</b> ${esc(s.name)} <span class="hint">(${s.n}${s.after ? ", des del " + fmtS(s.after) : ""})</span></span>${dt}</li>`;
+    }).join("")}</ul>`;
+    if (p.lostN){
+      const part = (t, o) => Object.keys(o).length ? `<div class="lh">${t}</div><ul>${Object.entries(o).sort((a,b) => b[1] - a[1]).map(([r,n]) => `<li><span>${esc(r)}</span><b>${n}</b></li>`).join("")}</ul>` : "";
+      h += `<details class="lost"><summary>Classes no fetes: ${p.lostN}</summary>${part("Anul·lades en aquest grup", p.lost.cancel)}${part("Activitats i imprevistos del centre", p.lost.off)}</details>`;
+    }
+    h += `</div>`;
+  }
+  sum.innerHTML = h;
+}
+
+function renderAll(){
+  cleanSel(); compute(); renderFilters(); renderCal(); renderSum();
+  if ($("#dayDlg").open) renderDayDlg();
+}
+const refresh = () => { cleanSel(); compute(); renderFilters(); renderCal(); renderSum(); };
+
+/* ---------- tema ---------- */
+function effTheme(){ return ui.theme || (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
+function applyTheme(){
+  if (ui.theme) document.documentElement.dataset.theme = ui.theme; else delete document.documentElement.dataset.theme;
+  const dark = effTheme() === "dark";
+  $("#themeBtn").innerHTML = dark ? SUN_SVG : MOON_SVG;
+  $("#themeBtn").setAttribute("aria-label", dark ? "Passa al mode clar" : "Passa al mode fosc");
+  $("#themeBtn").title = dark ? "Mode clar" : "Mode fosc";
+}
+$("#themeBtn").addEventListener("click", () => { ui.theme = effTheme() === "dark" ? "light" : "dark"; saveUi(); applyTheme(); });
+
+/* ---------- impressió ---------- */
+let prRestore = null;
+function openPrint(){
+  $("#prView").innerHTML = Object.entries(VIEWS).map(([k,l]) => `<option value="${k}" ${k === ui.view ? "selected" : ""}>${l}</option>`).join("");
+  $("#prSum").checked = ui.showSum;
+  updPrWhat();
+  $("#prDlg").showModal();
+}
+function updPrWhat(){ const v = $("#prView").value; $("#prWhat").textContent = "S'imprimirà: " + viewLabel(v) + (v !== "year" ? ". Canvia la data amb les fletxes abans d'imprimir si cal." : "."); }
+$("#prView").addEventListener("change", updPrWhat);
+$("#prGo").addEventListener("click", () => {
+  const v = $("#prView").value, withSum = $("#prSum").checked;
+  $("#prDlg").close();
+  prRestore = {view: ui.view, theme: document.documentElement.dataset.theme};
+  printing = true;
+  document.documentElement.dataset.theme = "light";
+  document.body.classList.toggle("print-sum", withSum);
+  ui.view = v; renderCal(); renderSum(withSum);
+  layout(600);
+  setTimeout(() => { try { window.print(); } catch(e){ setStatus("Aquesta vista no permet imprimir. Descarrega l'HTML i imprimeix des d'allí.", true); window.dispatchEvent(new Event("afterprint")); } }, 80);
+});
+window.addEventListener("afterprint", () => {
+  if (!prRestore) return;
+  ui.view = prRestore.view;
+  if (prRestore.theme) document.documentElement.dataset.theme = prRestore.theme; else delete document.documentElement.dataset.theme;
+  prRestore = null; printing = false;
+  document.body.classList.remove("print-sum");
+  renderCal(); renderSum();
+});
+$("#printBtn").addEventListener("click", openPrint);
+
+/* ---------- selector de dates ---------- */
+let pk = null;
+function openPicker(anchor, mode, a, b, onPick){
+  closePicker();
+  const host = anchor.closest("dialog") || document.body;
+  const el = document.createElement("div");
+  el.className = "picker"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", mode === "range" ? "Tria el període" : "Tria el dia");
+  host.appendChild(el);
+  pk = {el, anchor, mode, a, b: b || a, stage:0, onPick, hover:null, view: mStart(a || clampCourse(TODAY))};
+  renderPicker(); placePicker();
+  const first = el.querySelector(".pk-d.sa") || el.querySelector(".pk-d");
+  if (first) first.focus();
+  setTimeout(() => document.addEventListener("mousedown", pkOutside, true), 0);
+}
+function closePicker(){
+  if (!pk) return;
+  pk.el.remove(); document.removeEventListener("mousedown", pkOutside, true);
+  const a = pk.anchor; pk = null;
+  if (a && a.isConnected) a.focus();
+}
+function pkOutside(e){ if (pk && !pk.el.contains(e.target) && !pk.anchor.contains(e.target)) closePicker(); }
+function placePicker(){
+  const r = pk.anchor.getBoundingClientRect(), el = pk.el;
+  const w = el.offsetWidth, h = el.offsetHeight;
+  let left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8);
+  let top = r.bottom + 6;
+  if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+  el.style.left = left + "px"; el.style.top = top + "px";
+}
+function pkMonth(ms){
+  const t = new Date(D(ms)), y = t.getUTCFullYear(), m = t.getUTCMonth();
+  const dim = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+  let a = pk.a, b = pk.b;
+  if (pk.mode === "range" && pk.stage === 1){ b = pk.hover && pk.hover >= a ? pk.hover : a; }
+  let cells = '<span></span>'.repeat(wd(D(ms)));
+  for (let d = 1; d <= dim; d++){
+    const ds = S(Date.UTC(y, m, d)), w = wd(D(ds));
+    let c = "pk-d";
+    if (w > 4) c += " we";
+    const oo = offAt(ds);
+    if (oo) c += oo.kind === "inc" ? " inc" : " off"; else if (ds in state.evals) c += " ev";
+    if (ds < state.start || ds > state.end) c += " out";
+    if (ds === TODAY) c += " today";
+    if (a && ds === a) c += " sa";
+    if (a && b && ds === b) c += " sb";
+    if (a && b && ds > a && ds < b) c += " in";
+    const o = offAt(ds);
+    cells += `<button type="button" class="${c}" data-pd="${ds}" aria-label="${esc(fmtL(ds))}${o ? ", " + esc(o.label || "no lectiu") : ""}"${o ? ` title="${esc(o.label || "No lectiu")}"` : ""}>${d}</button>`;
+  }
+  return `<div class="pk-month"><h4>${MESOS[m]} ${y}</h4><div class="pk-grid">${DS7.map(x => `<span class="pk-wh">${x}</span>`).join("")}${cells}</div></div>`;
+}
+function renderPicker(){
+  const two = window.innerWidth >= 640;
+  let hint;
+  if (pk.mode === "single") hint = "Tria un dia";
+  else if (pk.stage === 0) hint = pk.a ? "Ara: " + fmtR(pk.a, pk.b) + ". Polsa el primer dia" : "Polsa el primer dia";
+  else hint = "Del " + fmtS(pk.a) + ": polsa l'últim dia";
+  pk.el.innerHTML = `<div class="pk-head"><button type="button" class="ib" data-pn="-1" aria-label="Mes anterior">‹</button><span style="flex:1"></span><button type="button" class="ib" data-pn="1" aria-label="Mes següent">›</button></div>
+    <div class="pk-months">${pkMonth(pk.view)}${two ? pkMonth(addM(pk.view, 1)) : ""}</div>
+    <div class="pk-foot"><span class="pk-hint">${hint}</span>${pk.mode === "range" && pk.stage === 1 ? `<button type="button" class="btn" data-pact="one">Només aquest dia</button>` : ""}<button type="button" class="btn" data-pact="cancel">Cancel·la</button></div>`;
+}
+document.addEventListener("click", e => {
+  if (!pk || !pk.el.contains(e.target)) return;
+  e.stopPropagation();
+  const nb = e.target.closest("[data-pn]");
+  if (nb){ pk.view = addM(pk.view, +nb.dataset.pn); renderPicker(); return; }
+  const ab = e.target.closest("[data-pact]");
+  if (ab){
+    if (ab.dataset.pact === "one"){ const f = pk.onPick, a = pk.a; closePicker(); f(a, a); }
+    else closePicker();
+    return;
+  }
+  const db = e.target.closest("[data-pd]"); if (!db) return;
+  e.stopPropagation();
+  const ds = db.dataset.pd;
+  if (pk.mode === "single"){ const f = pk.onPick; closePicker(); f(ds); return; }
+  if (pk.stage === 0){ pk.a = ds; pk.b = ds; pk.stage = 1; pk.hover = ds; renderPicker(); const btn = pk.el.querySelector(`[data-pd="${ds}"]`); if (btn) btn.focus(); return; }
+  let a = pk.a, b = ds; if (b < a) [a, b] = [b, a];
+  const f = pk.onPick; closePicker(); f(a, b);
+}, true);
+document.addEventListener("mouseover", e => {
+  if (!pk || pk.stage !== 1) return;
+  const db = e.target.closest && e.target.closest("[data-pd]");
+  if (!db || !pk.el.contains(db) || pk.hover === db.dataset.pd) return;
+  pk.hover = db.dataset.pd;
+  pk.el.querySelectorAll("[data-pd]").forEach(x => {
+    const d = x.dataset.pd, b = pk.hover >= pk.a ? pk.hover : pk.a;
+    x.classList.toggle("in", d > pk.a && d < b);
+    x.classList.toggle("sb", d === b);
+  });
+});
+document.addEventListener("keydown", e => {
+  if (!pk) return;
+  if (e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); closePicker(); }
+}, true);
+window.addEventListener("resize", () => { if (pk){ renderPicker(); placePicker(); } layout(); });
+const dateBtn = (attr, a, b) => `<button type="button" class="dbtn" ${attr}>${CAL_SVG}<span>${b === undefined ? fmtY(a) : fmtR(a, b)}</span></button>`;
+
+/* ---------- desat: fitxer o núvol ---------- */
+const FS = typeof window.showOpenFilePicker === "function";
+const PICK = {types:[{description:"Planificació de sessions", accept:{"application/json":[".json"]}}]};
+let handle = null, lastHandle = null, fileName = "", lastSaved = null;
+let demo = null; /* guia: planificador d'exemple que no es desa */
+let backups = [];
+let fileStamp = 0, lastWritten = "", conflict = null;
+const BK_LOCAL = 6, BK_EVERY = 12 * 3600e3;
+
+function idb(){ return new Promise((res, rej) => { const r = indexedDB.open("sessions-curs", 1); r.onupgradeneeded = () => r.result.createObjectStore("h"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function idbGet(k){ try { const db = await idb(); return await new Promise(res => { const q = db.transaction("h").objectStore("h").get(k); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); } catch(e){ return null; } }
+async function idbSet(k, v){ try { const db = await idb(); await new Promise(res => { const tx = db.transaction("h", "readwrite"); tx.objectStore("h").put(v, k); tx.oncomplete = res; tx.onerror = res; }); } catch(e){} }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function setStatus(txt, err){ const el = $("#status"); el.textContent = txt; el.classList.toggle("err", !!err); }
+const hhmm = d => String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+function okStatus(){
+  if (demo) return setStatus("Guia: planificador d'exemple (no es desa res)");
+  if (FS){
+    if (!handle) setStatus("Cap fitxer obert: els canvis no es guarden", true);
+    else setStatus("Desat a " + fileName + (lastSaved ? " a les " + hhmm(lastSaved) : ""));
+  } else setStatus(dirty ? "Canvis sense desar: descarrega el fitxer" : (fileName ? "Carregat de " + fileName : "Cap fitxer carregat"), dirty);
+}
+
+/* historial per a desfer */
+let undoS = [], redoS = [], baseline = null, lastPush = 0;
+function updUndo(){ $("#undoBtn").disabled = !undoS.length; $("#redoBtn").disabled = !redoS.length; }
+function resetHistory(){ undoS = []; redoS = []; baseline = JSON.stringify(state); lastPush = 0; updUndo(); }
+function save(noHist){
+  if (!noHist){
+    const now = Date.now();
+    if (baseline !== null && now - lastPush > 700){ undoS.push(baseline); if (undoS.length > 80) undoS.shift(); }
+    redoS = []; lastPush = now; baseline = JSON.stringify(state); updUndo();
+  }
+  dirty = true;
+  if (demo){ okStatus(); return; }
+  if (conflict){ renderBar(); return; }
+  if (FS && handle){ setStatus("Desant…"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 600); }
+  else { okStatus(); renderBar(); }
+}
+function travel(from, to){
+  if (!from.length) return;
+  closePicker();
+  to.push(JSON.stringify(state));
+  state = normalize(JSON.parse(from.pop()));
+  baseline = JSON.stringify(state); lastPush = 0; updUndo();
+  save(true); renderAll();
+  if ($("#setDlg").open) renderSet();
+}
+const undo = () => travel(undoS, redoS);
+const redo = () => travel(redoS, undoS);
+
+const fileJSON = () => JSON.stringify(Object.assign({}, state, {backups}), null, 2);
+async function writeNow(force){
+  if (!force && fileStamp){
+    const f = await handle.getFile();
+    if (f.lastModified > fileStamp){
+      const txt = await f.text();
+      if (txt !== lastWritten){
+        let o = null; try { o = JSON.parse(txt); } catch(e){}
+        if (o && Array.isArray(o.groups)){ conflict = {o, when:new Date(f.lastModified)}; throw {code:"conflict"}; }
+      }
+    }
+  }
+  const js = fileJSON();
+  const w = await handle.createWritable(); await w.write(js); await w.close();
+  lastWritten = js;
+  fileStamp = (await handle.getFile()).lastModified;
+}
+async function checkExternal(){
+  if (demo || !FS || !handle || dirty || writing || conflict || document.visibilityState !== "visible") return;
+  try {
+    const f = await handle.getFile();
+    if (f.lastModified <= fileStamp) return;
+    const txt = await f.text();
+    fileStamp = f.lastModified;
+    if (txt === lastWritten) return;
+    const o = JSON.parse(txt);
+    if (!o || !Array.isArray(o.groups)) return;
+    state = normalize(o); takeBackups(o); lastWritten = txt;
+    resetHistory(); renderAll(); if ($("#setDlg").open) renderSet();
+    setStatus("Actualitzat amb els canvis guardats en " + fileName + " a les " + hhmm(new Date(f.lastModified)));
+  } catch(e){}
+}
+setInterval(checkExternal, 20000);
+window.addEventListener("focus", checkExternal);
+document.addEventListener("visibilitychange", checkExternal);
+async function resolveConflict(keepMine){
+  if (!conflict) return;
+  if (keepMine){
+    conflict = null;
+    try { await writeNow(true); dirty = false; lastSaved = new Date(); okStatus(); } catch(e){ setStatus("No s'ha pogut desar a " + fileName, true); }
+  } else {
+    const o = conflict.o; conflict = null;
+    state = normalize(o); takeBackups(o); lastWritten = JSON.stringify(o, null, 2); dirty = false;
+    fileStamp = (await handle.getFile()).lastModified;
+    afterLoad();
+  }
+  renderBar();
+}
+async function flush(){
+  if (!handle || demo) return;
+  if (writing){ pending = true; return; }
+  writing = true; dirty = false;
+  try {
+    await writeNow();
+    lastSaved = new Date(); okStatus();
+  } catch(e){
+    dirty = true;
+    if (e && e.code === "conflict"){ setStatus("Algú altre ha canviat " + fileName + " mentre treballaves", true); renderBar(); }
+    else { setStatus("No s'ha pogut desar a " + fileName + ". Torna a obrir el fitxer des de la barra de dalt.", true); handle = null; renderBar(); }
+  }
+  writing = false;
+  if (pending){ pending = false; flush(); }
+}
+function afterLoad(){
+  cursor = clampCourse(TODAY); ng = null;
+  resetHistory(); renderAll(); renderBar(); okStatus();
+  if ($("#setDlg").open) renderSet();
+}
+function takeBackups(o){
+  backups = Array.isArray(o && o.backups) ? o.backups.filter(b => b && typeof b.data === "string" && b.t).slice(0, BK_LOCAL) : [];
+}
+
+/* còpies de seguretat */
+async function addBackup(label, data){
+  const b = {t:new Date().toISOString(), label, data: data || JSON.stringify(state)};
+  backups.unshift(b);
+  const keep = [], auto = [];
+  for (const x of backups) (x.label === "Automàtica" ? auto : keep).push(x);
+  backups = keep.concat(auto.slice(0, BK_LOCAL)).sort((a,b) => a.t < b.t ? 1 : -1).slice(0, BK_LOCAL + 4);
+}
+async function listBackups(){
+  return backups.slice();
+}
+async function autoBackup(){
+  try {
+    const list = await listBackups();
+    const lastAuto = list.find(b => b.label === "Automàtica");
+    if (!lastAuto || Date.now() - Date.parse(lastAuto.t) > BK_EVERY){
+      await addBackup("Automàtica");
+      if (handle) flush();
+    }
+  } catch(e){}
+}
+function restoreBackup(b){
+  if (!confirm("Vols tornar a la còpia del " + fmtStamp(b.t) + "? Ho podràs desfer amb Ctrl+Z.")) return;
+  undoS.push(JSON.stringify(state)); redoS = [];
+  state = normalize(JSON.parse(b.data));
+  baseline = JSON.stringify(state); lastPush = 0; updUndo();
+  save(true); renderAll();
+  if ($("#setDlg").open) renderSet();
+}
+const fmtStamp = t => { const d = new Date(t); return d.getDate() + " " + MCURT[d.getMonth()] + " " + d.getFullYear() + ", " + hhmm(d); };
+
+/* fitxer local */
+async function useHandle(h, auto){
+  try {
+    if (h.queryPermission && (await h.queryPermission({mode:"readwrite"})) !== "granted"){
+      if (auto) return false;
+      if ((await h.requestPermission({mode:"readwrite"})) !== "granted"){ setStatus("Sense permís per a escriure en " + h.name, true); return; }
+    }
+    const fh = await h.getFile();
+    const txt = await fh.text();
+    let o = null;
+    if (txt.trim()){ o = JSON.parse(txt); if (!o || !Array.isArray(o.groups)) throw new Error("format"); }
+    state = normalize(o || defaultState()); takeBackups(o);
+    fileStamp = fh.lastModified; lastWritten = txt; conflict = null;
+    handle = h; lastHandle = h; fileName = h.name; dirty = false; lastSaved = null;
+    await idbSet("last", h);
+    if (!o) await writeNow();
+    afterLoad();
+    autoBackup();
+    return true;
+  } catch(e){
+    if (auto) return false;
+    setStatus(e && e.message === "format" ? h.name + " no és un fitxer d'aquesta planificació" : "No s'ha pogut obrir " + h.name, true);
+  }
+}
+async function openFile(){
+  try { const [h] = await window.showOpenFilePicker(PICK); await useHandle(h); }
+  catch(e){ if (!e || e.name !== "AbortError") setStatus("No s'ha pogut obrir el fitxer", true); }
+}
+async function newFile(name){
+  try {
+    const h = await window.showSaveFilePicker({...PICK, suggestedName: name || "sessions-curs-" + courseLabel(state) + ".json"});
+    handle = h; lastHandle = h; fileName = h.name; fileStamp = 0; conflict = null;
+    await idbSet("last", h);
+    await writeNow(true); dirty = false; lastSaved = new Date();
+    renderBar(); okStatus();
+    if ($("#setDlg").open) renderSet();
+    return true;
+  } catch(e){ if (!e || e.name !== "AbortError") setStatus("No s'ha pogut crear el fitxer", true); return false; }
+}
+async function saveText(filename, text){
+  try {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], {type:"application/octet-stream"}));
+    a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    return true;
+  } catch(e){ setStatus("Aquesta vista no permet descarregar fitxers", true); return false; }
+}
+async function download(){
+  const ok = await saveText(fileName || "sessions-curs-" + courseLabel(state) + ".json", fileJSON());
+  if (ok && !FS){ dirty = false; okStatus(); renderBar(); }
+}
+async function loadPicked(f){
+  try {
+    const o = JSON.parse(await f.text());
+    if (!o || !Array.isArray(o.groups)) throw new Error("format");
+    state = normalize(o); takeBackups(o); fileName = f.name; dirty = false;
+    afterLoad();
+    autoBackup();
+  } catch(e){ setStatus(f.name + " no és un fitxer d'aquesta planificació", true); }
+}
+function renderBar(){
+  let h = "";
+  if (demo){ h = ""; }
+  else if (conflict){
+    h = `<p><b>Algú altre ha guardat canvis en ${esc(fileName)}</b> (a les ${hhmm(conflict.when)}) mentre tu treballaves. No s'ha sobreescrit res. Tria quina versió es queda:</p><div class="row"><button type="button" class="btn primary" data-fa="theirs">Carrega la seua versió (perds el teu últim canvi)</button><button type="button" class="btn" data-fa="mine">Mantén la meua (perds els seus canvis)</button></div>`;
+  } else {
+    if (FS && !handle){
+      h = `<p>Tria el fitxer on es guarda la planificació. Cada canvi s'hi desarà sol.</p><div class="row">`;
+      if (lastHandle){
+        h = `<p>El navegador demana permís per a tornar a obrir <b>${esc(lastHandle.name)}</b>. Si en el missatge tries «Permet en cada visita», la pròxima vegada s'obrirà sol.</p><div class="row">`;
+        h += `<button type="button" class="btn primary" data-fa="last">Continua amb ${esc(lastHandle.name)}</button><button type="button" class="btn" data-fa="open">Obri un altre fitxer</button>`;
+      } else h += `<button type="button" class="btn primary" data-fa="open">Obri un fitxer</button>`;
+      h += `<button type="button" class="btn" data-fa="new">Crea un fitxer nou</button><button type="button" class="btn" data-fa="tour">Fes la visita guiada</button></div>`;
+    } else if (!FS){
+      h = `<p>Aquest navegador no pot escriure directament en el fitxer: carrega'l en obrir la pàgina i descarrega'l quan acabes. Amb Chrome o Edge d'ordinador es desa sol.</p><div class="row"><button type="button" class="btn" data-fa="load">Carrega fitxer</button><button type="button" class="btn${dirty ? " primary" : ""}" data-fa="dl">Descarrega${dirty ? " els canvis" : ""}</button><button type="button" class="btn" data-fa="tour">Fes la visita guiada</button></div>`;
+    }
+  }
+  const bar = $("#fileBar"); const was = bar.hidden;
+  bar.innerHTML = h; bar.hidden = !h;
+  if (was !== bar.hidden) layout();
+}
+function fileAct(a){
+  if (a === "last" && lastHandle) useHandle(lastHandle);
+  if (a === "open") openFile();
+  if (a === "new") newFile();
+  if (a === "load") $("#impFile").click();
+  if (a === "dl") download();
+  if (a === "tour") startTour();
+  if (a === "theirs") resolveConflict(false);
+  if (a === "mine") resolveConflict(true);
+}
+$("#fileBar").addEventListener("click", e => { const b = e.target.closest("[data-fa]"); if (b) fileAct(b.dataset.fa); });
+$("#impFile").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) loadPicked(f); });
+window.addEventListener("beforeunload", e => { if ((dirty && !demo) || writing){ e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------- curs nou ---------- */
+const courseLabel = s => s.start.slice(0,4) + "-" + s.end.slice(2,4);
+const shiftY = (ds, n) => { const [y,m,d] = ds.split("-").map(Number); return S(Date.UTC(y + n, m - 1, d)); };
+let nc = null;
+function openNC(){
+  nc = {a: shiftY(state.start, 1), b: shiftY(state.end, 1)};
+  renderNC(); $("#ncDlg").showModal();
+}
+function renderNC(){
+  const where = FS ? "El curs actual queda en el fitxer de sempre i el nou es crea en un fitxer a banda."
+    : "El curs actual queda en el fitxer que ja tens. Descarrega primer els canvis si n'hi ha.";
+  $("#ncIn").innerHTML = `<p class="hint" style="margin-top:0">${where}</p>
+    <label class="lbl">Dates del curs nou</label>${dateBtn('data-nc="dates"', nc.a, nc.b)}
+    <div style="display:grid;gap:10px;margin-top:14px">
+      <label class="chk"><input type="checkbox" id="ncGroups" checked> Mantén els grups i el seu horari</label>
+      <label class="chk"><input type="checkbox" id="ncSdas" checked> Mantén les SdA i el contingut de les sessions</label>
+      <label class="chk"><input type="checkbox" id="ncOff" checked> Copia els festius sumant un any</label>
+    </div>
+    <p class="hint">Els trimestres es copien sumant un any. Revisa'ls, i també Pasqua i els festius locals. Les classes anul·lades, les notes i les avaluacions no es copien.</p>
+    <div class="row" style="margin-top:14px"><button type="button" class="btn primary" data-nc="go">Crea el curs nou</button></div>`;
+}
+async function startNC(){
+  const old = state, years = +nc.a.slice(0,4) - +old.start.slice(0,4) || 1;
+  const keepG = $("#ncGroups").checked, keepS = $("#ncSdas").checked, keepOff = $("#ncOff").checked;
+  const ns = defaultState();
+  ns.start = nc.a; ns.end = nc.b; ns.dur = old.dur; ns.slots = JSON.parse(JSON.stringify(old.slots || []));
+  ns.terms = old.terms.map(t => ({...t, start:shiftY(t.start, years), end:shiftY(t.end, years)}));
+  ns.off = keepOff ? old.off.filter(r => r.kind !== "inc").map(r => ({...r, from:shiftY(r.from, years), to:shiftY(r.to, years)})) : [];
+  ns.groups = keepG ? JSON.parse(JSON.stringify(old.groups)) : [];
+  ns.sdas = keepS ? JSON.parse(JSON.stringify(old.sdas)).map(s => ({...s, after: s.after ? shiftY(s.after, years) : ""})) : [];
+  ns.plans = JSON.parse(JSON.stringify(old.plans)).filter(p => ns.groups.some(g => g.plan === p.id) || ns.sdas.some(s => s.pid === p.id));
+  const fresh = normalize(ns);
+  if (FS){
+    const prevH = handle, prevB = backups, prevS = state;
+    state = fresh; backups = [];
+    const ok = await newFile("sessions-curs-" + courseLabel(fresh) + ".json");
+    if (!ok){ state = prevS; backups = prevB; handle = prevH; return; }
+    $("#ncDlg").close(); afterLoad();
+  } else {
+    state = fresh; backups = []; fileName = "sessions-curs-" + courseLabel(fresh) + ".json";
+    $("#ncDlg").close(); afterLoad(); dirty = true; okStatus(); renderBar();
+  }
+}
+$("#ncDlg").addEventListener("click", e => {
+  if (pk && pk.el.contains(e.target)) return;
+  if (e.target === $("#ncDlg") || e.target.closest("[data-close]")){ $("#ncDlg").close(); return; }
+  const b = e.target.closest("[data-nc]"); if (!b) return;
+  if (b.dataset.nc === "dates") openPicker(b, "range", nc.a, nc.b, (a, z) => { nc.a = a; nc.b = z; const g = $("#ncGroups").checked, s = $("#ncSdas").checked, o = $("#ncOff").checked; renderNC(); $("#ncGroups").checked = g; $("#ncSdas").checked = s; $("#ncOff").checked = o; });
+  if (b.dataset.nc === "go") startNC();
+});
+$("#ncDlg").addEventListener("cancel", e => { if (pk){ e.preventDefault(); closePicker(); } });
+
+/* ---------- exportacions ---------- */
+const fmtDD = s => s.slice(8,10) + "/" + s.slice(5,7) + "/" + s.slice(0,4);
+const fmtUS = s => s.slice(5,7) + "/" + s.slice(8,10) + "/" + s.slice(0,4);
+const csvCell = (v, sep) => { v = String(v ?? ""); return (v.includes(sep) || v.includes('"') || /[\r\n]/.test(v)) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+const csvJoin = (rows, sep) => rows.map(r => r.map(c => csvCell(c, sep)).join(sep)).join("\r\n");
+function exportTemporal(){
+  const gs = state.groups.filter(g => shown(g.id));
+  const rows = [["Grup","Nom","SdA","Títol","Sessions","Comença no abans de","Inici","Final", ...state.terms.map(t => "Sessions " + t.name), "Estat"]];
+  for (const g of gs){
+    const p = CALC.per[g.id];
+    sdasOf(g.id).forEach((s, i) => {
+      const r = p.ranges[s.id];
+      const estat = !(s.n > 0) ? "Sense sessions" : !r ? "No hi cap" : r.complete ? "Completa" : "Només hi caben " + r.c;
+      rows.push([g.code, g.name, "SdA" + (i+1), s.name, s.n, s.after ? fmtDD(s.after) : "", r ? fmtDD(r.from) : "", r && r.complete ? fmtDD(r.to) : "", ...state.terms.map((t,j) => r ? r.tc[j] : 0), estat]);
+    });
+  }
+  rows.push([]);
+  rows.push(["Grup","Nom", ...state.terms.map(t => t.name), "Curs","Planificades en SdA","Diferència","Classes no fetes"]);
+  for (const g of gs){
+    const p = CALC.per[g.id];
+    rows.push([g.code, g.name, ...state.terms.map((t,j) => p.tc[j] || 0), p.total, p.planned, p.total - p.planned, p.lostN]);
+  }
+  saveText("temporalitzacio-" + courseLabel(state) + ".csv", "\ufeff" + csvJoin(rows, ";"));
+}
+function calEvents(what){
+  const ev = [];
+  const gs = state.groups.filter(g => shown(g.id));
+  if (what === "sda"){
+    for (const g of gs){
+      const p = CALC.per[g.id];
+      sdasOf(g.id).forEach((s, i) => {
+        const r = p.ranges[s.id]; if (!r) return;
+        ev.push({uid:g.id + "-" + s.id, title:(g.code || g.name) + " · SdA" + (i+1) + (s.name ? ": " + s.name : ""), desc:s.n + " sessions" + (r.complete ? "" : " (només en caben " + r.c + ")"), day:r.from, dayEnd:r.to});
+      });
+    }
+    return ev;
+  }
+  const dates = Object.keys(CALC.byDate).sort();
+  for (const ds of dates) for (const e of CALC.byDate[ds]){
+    if (e.cancel || !shown(e.gid)) continue;
+    const g = grp(e.gid);
+    let t = e.time, n = 0;
+    runsOf(e).forEach(run => {
+      const i = runInfo(g, run);
+      const title = (g.code || g.name) + " · " + (i.s ? "SdA" + i.idx + " " + i.num : "S" + i.cRange);
+      const desc = [i.s && i.s.name ? "SdA" + i.idx + ": " + i.s.name : "", ...i.ses.map(x => "S" + x.k + ": " + x.t), e.note ? "Nota: " + e.note : ""].filter(Boolean).join("\n");
+      const item = {uid:g.id + "-" + ds + "-" + (n++), title, desc, day:ds, dayEnd:ds};
+      if (t){ item.start = t; item.end = endOf(t, run.length); t = nextStart(t, run.length); }
+      ev.push(item);
+    });
+  }
+  return ev;
+}
+function icsText(ev){
+  const escT = s => String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  const fold = l => { const out = []; while (l.length > 73){ out.push(l.slice(0, 73)); l = " " + l.slice(73); } out.push(l); return out.join("\r\n"); };
+  const ymd = s => s.replace(/-/g, "");
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+  const L = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sessions del curs//CA","CALSCALE:GREGORIAN"];
+  for (const e of ev){
+    L.push("BEGIN:VEVENT", "UID:" + e.uid + "@sessions-curs", "DTSTAMP:" + stamp);
+    if (e.start){ L.push("DTSTART:" + ymd(e.day) + "T" + e.start.replace(":", "") + "00", "DTEND:" + ymd(e.day) + "T" + e.end.replace(":", "") + "00"); }
+    else { L.push("DTSTART;VALUE=DATE:" + ymd(e.day), "DTEND;VALUE=DATE:" + ymd(addD(e.dayEnd, 1))); }
+    L.push(fold("SUMMARY:" + escT(e.title)));
+    if (e.desc) L.push(fold("DESCRIPTION:" + escT(e.desc)));
+    L.push("END:VEVENT");
+  }
+  L.push("END:VCALENDAR");
+  return L.join("\r\n") + "\r\n";
+}
+function gcalCsv(ev){
+  const t12 = t => { let h = +t.slice(0,2); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return String(h).padStart(2,"0") + ":" + t.slice(3,5) + " " + ap; };
+  const rows = [["Subject","Start Date","Start Time","End Date","End Time","All Day Event","Description"]];
+  for (const e of ev) rows.push(e.start ? [e.title, fmtUS(e.day), t12(e.start), fmtUS(e.day), t12(e.end), "False", e.desc] : [e.title, fmtUS(e.day), "", fmtUS(e.dayEnd), "", "True", e.desc]);
+  return csvJoin(rows, ",");
+}
+function openExport(){
+  $("#exFmt").innerHTML = `<option value="ics">.ics (Google Calendar, Outlook, Apple)</option>` + `<option value="gcsv">.csv per a Google Calendar</option>`;
+  $("#expDlg").showModal();
+}
+$("#expDlg").addEventListener("click", e => {
+  if (e.target === $("#expDlg") || e.target.closest("[data-close]")){ $("#expDlg").close(); return; }
+  const b = e.target.closest("[data-ex]"); if (!b) return;
+  if (b.dataset.ex === "temporal") exportTemporal();
+  if (b.dataset.ex === "cal"){
+    const what = $("#exWhat").value, fmt = $("#exFmt").value;
+    const ev = calEvents(what);
+    if (!ev.length){ setStatus("No hi ha res per exportar amb el filtre actual", true); return; }
+    const base = (what === "sda" ? "sda-" : "classes-") + courseLabel(state);
+    if (fmt === "ics") saveText(base + ".ics", icsText(ev)); else saveText(base + "-google.csv", gcalCsv(ev));
+  }
+});
+
+/* ---------- dia ---------- */
+function setOv(gid, ds, n, note){
+  const g = grp(gid); if (!g) return;
+  const base = g.days[wd(D(ds))] || 0;
+  const k = key(gid, ds);
+  n = Math.max(0, Math.min(6, n));
+  if (n === base && !note) delete state.ov[k];
+  else state.ov[k] = {n, note: note || ""};
+}
+function setOff(ds, on, label){
+  if (on){ if (!offAt(ds)) state.off.push({from:ds, to:ds, label: label || "", kind:"fest"}); }
+  else {
+    const r = offAt(ds); if (!r) return;
+    state.off.splice(state.off.indexOf(r), 1);
+    const prev = addD(ds, -1), next = addD(ds, 1);
+    if (r.from <= prev) state.off.push({from:r.from, to:prev, label:r.label, kind:r.kind});
+    if (next <= r.to) state.off.push({from:next, to:r.to, label:r.label, kind:r.kind});
+  }
+  state.off.sort((a,b) => a.from < b.from ? -1 : 1);
+}
+function setTermEdge(i, edge, ds){
+  const t = state.terms[i]; if (!t) return;
+  if (edge === "end"){
+    t.end = ds; if (t.start > ds) t.start = ds;
+    const n = state.terms[i+1]; if (n && n.start <= ds){ n.start = addD(ds, 1); if (n.end < n.start) n.end = n.start; }
+  } else {
+    t.start = ds; if (t.end < ds) t.end = ds;
+    const p = state.terms[i-1]; if (p && p.end >= ds){ p.end = addD(ds, -1); if (p.start > p.end) p.start = p.end; }
+  }
+}
+function renderDayDlg(){
+  const ds = curDay, off = offAt(ds), ti = termAt(ds), w = wd(D(ds)), ev = state.evals[ds];
+  let h = `<div class="dhead"><div><h2 id="dayTitle">${esc(fmtL(ds))}</h2><p>${ti >= 0 ? esc(state.terms[ti].name) : "Fora de les dates dels trimestres"}</p></div><button class="btn" type="button" data-close>Tanca</button></div><div class="dbody">`;
+  h += `<div class="blk"><label class="chk"><input type="checkbox" id="offChk" ${off ? "checked" : ""}> Dia sense classe per a tot el centre</label>`;
+  if (off){
+    h += `<select class="full" id="offKind" aria-label="Tipus de dia"><option value="fest" ${off.kind !== "inc" ? "selected" : ""}>Festiu o vacances (no compta com a classe no feta)</option><option value="inc" ${off.kind === "inc" ? "selected" : ""}>Activitat o imprevist: eixida, alerta meteorològica… (compta com a classe no feta)</option></select>`;
+    h += `<input class="full" id="offLbl" value="${esc(off.label)}" placeholder="${off.kind === "inc" ? "Eixida Bassetes, alerta meteo…" : "Falles, festa local…"}" aria-label="Motiu del dia sense classe">`;
+    if (off.from !== off.to) h += `<p class="hint">Forma part del període ${fmtS(off.from)} – ${fmtS(off.to)}. Si el desmarques, només s'allibera aquest dia.</p>`;
+  } else h += `<p class="hint">Les sessions de tots els grups es corren a la classe següent. Si només afecta alguns grups (una eixida d'un nivell), baixa les sessions a 0 en cada grup de sota i posa-hi el motiu.</p>`;
+  h += `</div>`;
+  h += `<div class="blk"><label class="chk"><input type="checkbox" id="evChk" ${ev != null ? "checked" : ""}> Dia d'avaluació</label>`;
+  if (ev != null) h += `<input class="full" id="evLbl" value="${esc(ev)}" placeholder="1a avaluació, avaluació inicial…" aria-label="Nom de l'avaluació">`;
+  h += `<p class="hint">Només canvia el fons del dia: les classes es compten igual.</p></div>`;
+  const endSel = state.terms.findIndex(t => t.end === ds), startSel = state.terms.findIndex(t => t.start === ds);
+  h += `<div class="blk"><b>Trimestres</b><div class="tsel">
+    <label>Aquest dia comença el<select id="tStart"><option value="">cap trimestre</option>${state.terms.map((t,i) => `<option value="${i}" ${startSel === i ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></label>
+    <label>Aquest dia acaba el<select id="tEnd"><option value="">cap trimestre</option>${state.terms.map((t,i) => `<option value="${i}" ${endSel === i ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></label></div>
+    <p class="hint">${state.terms.map(t => `${esc(t.name)}: ${fmtS(t.start)} – ${fmtS(t.end)}`).join("<br>")}</p></div>`;
+  if (!off){
+    if (!state.groups.length) h += `<div class="blk"><p class="hint">Encara no hi ha grups.</p></div>`;
+    for (const g of state.groups){
+      const base = g.days[w] || 0, o = state.ov[key(g.id, ds)];
+      const n = o ? +o.n || 0 : base;
+      const entry = (CALC.byDate[ds] || []).find(e => e.gid === g.id);
+      let hint;
+      if (n === base) hint = base ? (base === 1 ? "1 sessió segons l'horari" : base + " sessions segons l'horari") : "Sense classe en l'horari";
+      else if (n === 0) hint = "No es fa: les sessions es corren a la classe següent";
+      else hint = "Canviat (horari: " + base + ")";
+      h += `<div class="blk grow" data-g="${esc(g.id)}" style="${gv(g)}"><div class="gh"><b>${gcode(g)}</b>${esc(g.name)}</div>
+        <div class="step"><button type="button" data-act="dec" aria-label="Una sessió menys">−</button><output>${n}</output><button type="button" data-act="inc" aria-label="Una sessió més">+</button><span class="hint">${hint}</span></div>
+        <input class="gnote" value="${esc(o ? o.note : "")}" placeholder="Nota: per què no es fa, canvi d'aula…" aria-label="Nota per a ${esc(g.name)}">
+        ${entry ? `<div class="prev">${entryHTML(entry, "month")}</div>` : ""}
+        ${entry && !entry.cancel ? (() => { const ls = entry.slots.filter(x => !x.free).map(x => { const s = state.sdas.find(y => y.id === x.sid); const t = s && (s.ses || [])[x.k-1]; return t ? "S" + x.k + ": " + t : ""; }).filter(Boolean); return ls.length ? `<p class="hint">${ls.map(esc).join("<br>")}</p>` : ""; })() : ""}
+        ${o ? `<button type="button" class="link" data-act="reset">Torna a l'horari</button>` : ""}</div>`;
+    }
+  }
+  h += `<div class="blk"><label class="lbl" for="dayNote">Nota del dia</label><textarea id="dayNote" placeholder="Qualsevol cosa que vulgues recordar">${esc(state.notes[ds] || "")}</textarea></div></div>`;
+  $("#dayIn").innerHTML = h;
+}
+function openDay(ds){ curDay = ds; renderDayDlg(); $("#dayDlg").showModal(); }
+
+$("#dayDlg").addEventListener("click", e => {
+  if (e.target === $("#dayDlg") || e.target.closest("[data-close]")) { $("#dayDlg").close(); return; }
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const gid = b.closest("[data-g]").dataset.g;
+  const g = grp(gid); const base = g.days[wd(D(curDay))] || 0;
+  const o = state.ov[key(gid, curDay)];
+  const n = o ? +o.n || 0 : base, note = o ? o.note : "";
+  if (b.dataset.act === "inc") setOv(gid, curDay, n + 1, note);
+  if (b.dataset.act === "dec") setOv(gid, curDay, n - 1, note);
+  if (b.dataset.act === "reset") delete state.ov[key(gid, curDay)];
+  save(); refresh(); renderDayDlg();
+});
+$("#dayDlg").addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "offChk"){ setOff(curDay, t.checked, ""); save(); refresh(); renderDayDlg(); return; }
+  if (t.id === "offKind"){ const r = offAt(curDay); if (r){ r.kind = t.value === "inc" ? "inc" : "fest"; save(); refresh(); renderDayDlg(); } return; }
+  if (t.id === "offLbl"){ const r = offAt(curDay); if (r){ r.label = t.value.trim(); save(); refresh(); } return; }
+  if (t.id === "evChk"){ if (t.checked) state.evals[curDay] = ""; else delete state.evals[curDay]; save(); refresh(); renderDayDlg(); return; }
+  if (t.id === "evLbl"){ if (curDay in state.evals){ state.evals[curDay] = t.value.trim(); save(); refresh(); } return; }
+  if (t.id === "tEnd" || t.id === "tStart"){
+    if (t.value !== "") setTermEdge(+t.value, t.id === "tEnd" ? "end" : "start", curDay);
+    save(); refresh(); renderDayDlg(); return;
+  }
+  if (t.id === "dayNote"){ const v = t.value.trim(); if (v) state.notes[curDay] = v; else delete state.notes[curDay]; save(); refresh(); return; }
+  if (t.classList.contains("gnote")){
+    const gid = t.closest("[data-g]").dataset.g; const g = grp(gid);
+    const base = g.days[wd(D(curDay))] || 0; const o = state.ov[key(gid, curDay)];
+    setOv(gid, curDay, o ? +o.n || 0 : base, t.value.trim()); save(); refresh(); renderDayDlg();
+  }
+});
+
+/* ---------- configuració ---------- */
+const TABS = [["grups","Grups"],["sda","SdA"],["curs","Curs i trimestres"],["dies","Dies sense classe i avaluacions"],["fitxer","Fitxer"]];
+function renderTabs(){ $("#tabs").innerHTML = TABS.map(([k,l]) => `<button type="button" class="tab" role="tab" data-tab="${k}" aria-selected="${setTab === k}">${l}</button>`).join(""); }
+function openSet(tab){ if (tab) setTab = tab; renderTabs(); renderSet(); if (!$("#setDlg").open) $("#setDlg").showModal(); }
+const rngText = (s, r) => !(s.n > 0) ? "Sense sessions" : !r ? "No hi cap dins del curs" : r.complete ? `${fmtS(r.from)} – ${fmtS(r.to)}` : `comença el ${fmtS(r.from)} però només hi caben ${r.c}`;
+function sdaRange(s){
+  const us = usersOf(s.pid);
+  if (!us.length) return "Cap grup fa servir aquesta programació";
+  if (us.length === 1){ const p = CALC.per[us[0].id]; return rngText(s, p && p.ranges[s.id]); }
+  return us.map(g => { const p = CALC.per[g.id]; return (g.code || g.name) + ": " + rngText(s, p && p.ranges[s.id]); }).join(" · ");
+}
+function planOptions(selected, withNew){
+  return state.plans.map(p => `<option value="${esc(p.id)}" ${p.id === selected ? "selected" : ""}>${esc(planLabel(p))}</option>`).join("") + (withNew ? `<option value="__new" ${selected === "__new" ? "selected" : ""}>Programació nova (pròpia d'aquest grup)</option>` : "");
+}
+function newGroupDraft(){ return {code:"", name:"", color:PAL_G[state.groups.length % PAL_G.length], plan:"__new", days:[0,0,0,0,0], times:["","","","",""], err:""}; }
+function timeField(g, i, isNew){
+  const attr = (isNew ? "data-ngtime" : "data-gtime") + `="${i}"`;
+  const off = !(g.days[i] > 0), v = off ? "" : ((g.times || [])[i] || "");
+  const dis = off ? ` disabled title="Aquest dia no hi ha classe"` : "";
+  if (!state.slots.length) return `<input type="time" step="300" ${attr} value="${esc(v)}"${dis}>`;
+  let o = `<option value="">—</option>` + state.slots.map(x => `<option value="${x.s}" ${x.s === v ? "selected" : ""}>${fmtSlot(x)}</option>`).join("");
+  if (v && slotIdx(v) < 0) o += `<option value="${esc(v)}" selected>${fmtT(v)}</option>`;
+  return `<select ${attr}${dis}>${o}</select>`;
+}
+function groupFields(g, isNew){
+  const a = isNew ? "data-ng" : "data-gf";
+  return `<div class="fields">
+      <label class="f">Abreviatura<input class="code" ${a}="code" value="${esc(g.code)}" maxlength="8" placeholder="1ESO A"></label>
+      <label class="f">Nom complet (grup i matèria)<input ${a}="name" value="${esc(g.name)}" placeholder="1r ESO A, Tecnologia i Robòtica"></label>
+      <label class="f">Color<input type="color" ${a}="color" value="${esc(g.color)}"></label>
+      <label class="f wide">SdA que segueix<select ${a}="plan">${planOptions(g.plan, true)}</select></label>
+      <div class="f wide">Sessions cada dia de la setmana<div class="days">${DS.map((d,i) => `<label>${d}<input type="number" min="0" max="6" ${isNew ? "data-ngday" : "data-gday"}="${i}" value="${g.days[i]}"></label>`).join("")}</div></div>
+      <div class="f wide">Hora de la classe (opcional: ordena la setmana i s'usa en exportar al calendari)${state.slots.length ? "" : `. Si poses l'horari del centre a «Curs i trimestres», ací podràs triar la franja d'un desplegable`}<div class="days times">${DS.map((d,i) => `<label>${d}${timeField(g, i, isNew)}</label>`).join("")}</div></div>
+    </div>`;
+}
+function renderSet(){
+  let h = "";
+  if (setTab === "grups"){
+    h += `<p class="hint" style="margin-top:0">Els grups que segueixen les mateixes SdA (per exemple 1ESO A, B i C) les comparteixen: les poses una vegada i cada grup avança amb el seu horari. Si un grup no té SdA, les sessions es numeren S1, S2, S3…</p><button type="button" class="btn primary" data-gact="gonew" style="margin-bottom:12px">Afig un grup nou</button>`;
+    for (const g of state.groups){
+      h += `<div class="gcard" data-gid="${esc(g.id)}" style="${gv(g)}">${groupFields(g, false)}<div class="row" style="margin-top:10px;justify-content:flex-end"><button type="button" class="btn danger" data-gact="del">Elimina el grup</button></div></div>`;
+    }
+    if (!ng) ng = newGroupDraft();
+    h += `<div class="gcard new" id="ngCard" style="--g:${esc(ng.color)}"><h3>Grup nou</h3>${groupFields(ng, true)}
+      ${ng.err ? `<p class="err">${esc(ng.err)}</p>` : ""}
+      <div class="row" style="margin-top:10px"><button type="button" class="btn primary" data-gact="create">Crea el grup</button></div></div>`;
+  }
+  if (setTab === "sda"){
+    if (!state.plans.length) h = `<p>Primer afig un grup a la pestanya Grups.</p>`;
+    else {
+      if (!plan(sdaPlan)){ const g = [...sel].map(grp).find(Boolean) || state.groups[0]; sdaPlan = g ? g.plan : state.plans[0].id; }
+      const p = plan(sdaPlan), us = usersOf(p.id);
+      h += `<label class="lbl" for="sdaP">Programació</label><select id="sdaP">${planOptions(sdaPlan, false)}</select>
+        <label class="lbl" for="pName">Nom (opcional)</label><input id="pName" value="${esc(p.name)}" placeholder="TRDR 1r ESO" style="width:100%">
+        <div class="users">La fan: ${us.length ? us.map(g => `<span class="badge" style="${gv(g)}">${gcode(g)}</span>`).join("") : "cap grup"}${!us.length ? `<button type="button" class="link" data-sact="delplan" style="margin:0 0 0 8px">Elimina aquesta programació</button>` : ""}</div>
+        <p class="hint">L'ordre de la llista és l'ordre en què es fan. Per a compartir-les amb un altre grup, tria-les a la pestanya Grups.</p><div style="margin-top:10px">`;
+      sdasP(p.id).forEach((s,i) => {
+        const filled = (s.ses || []).slice(0, s.n).filter(Boolean).length;
+        h += `<div class="srow" data-sid="${esc(s.id)}"><span class="num">SdA${i+1}</span>
+          <input type="color" data-sf="color" value="${esc(s.color)}" aria-label="Color de la SdA">
+          <input data-sf="name" value="${esc(s.name)}" placeholder="Títol de la SdA" aria-label="Títol">
+          <input type="number" min="0" max="300" data-sf="n" value="${s.n}" aria-label="Nombre de sessions">
+          <span class="ctrls"><button type="button" class="ib" data-sact="up" aria-label="Puja">↑</button><button type="button" class="ib" data-sact="down" aria-label="Baixa">↓</button><button type="button" class="ib del" data-sact="del" aria-label="Elimina">✕</button></span>
+          <div class="sx"><span class="rng">${esc(sdaRange(s))}</span><span class="aft">Comença no abans de ${s.after ? dateBtn('data-pick="after" aria-label="Data mínima d\'inici"', s.after) + `<button type="button" class="ib" data-sact="noafter" aria-label="Treu la data">✕</button>` : `<button type="button" class="dbtn" data-pick="after">${CAL_SVG}<span>qualsevol dia</span></button>`}</span></div>
+          <details class="sesd" data-sid="${esc(s.id)}"${openSes.has(s.id) ? " open" : ""}><summary>Contingut de les sessions (${filled} de ${s.n})</summary>
+            <div class="sesl">${Array.from({length:s.n}, (_, j) => `<label><span>S${j+1}</span><input data-ses="${j}" value="${esc((s.ses || [])[j] || "")}" placeholder="Què es fa en aquesta sessió"></label>`).join("")}</div></details></div>`;
+      });
+      h += `</div><button type="button" class="btn primary" data-sact="add">Afig SdA</button>`;
+    }
+  }
+  if (setTab === "curs"){
+    h += `<h3 class="sec">Curs</h3><div class="row">${dateBtn('data-pick="course" aria-label="Dates del curs"', state.start, state.end)}<label class="f" style="flex-direction:row;align-items:center;gap:8px">Durada de cada sessió (si no hi ha franges)<input type="number" min="10" max="240" data-cf="dur" value="${state.dur}" style="width:70px"> min</label></div>
+      <div class="row" style="margin-top:10px"><button type="button" class="btn" data-ncopen>Comença un curs nou…</button><span class="hint" style="margin:0">Copia grups i SdA, i deixa enrere anul·lacions, notes i avaluacions.</span></div>`;
+    h += `<h3 class="sec">Trimestres</h3><p class="hint" style="margin-top:0">Color, nom i dates de cada trimestre. També les pots canviar polsant un dia del calendari.</p>`;
+    state.terms.forEach((t,i) => {
+      h += `<div class="trow" data-ti="${i}"><input type="color" data-tf="color" value="${esc(t.color)}" aria-label="Color del trimestre"><input data-tf="name" value="${esc(t.name)}" aria-label="Nom">${dateBtn(`data-pick="term" aria-label="Dates de ${esc(t.name)}"`, t.start, t.end)}<button type="button" class="ib del" data-tact="del" aria-label="Elimina trimestre">✕</button></div>`;
+    });
+    h += `<button type="button" class="btn" data-tact="add">Afig trimestre</button>`;
+    h += `<h3 class="sec">Horari del centre</h3><p class="hint" style="margin-top:0">Les franges de classe de l'institut (per exemple 8:00–8:55). Si les poses, en cada grup triaràs la franja d'un desplegable en lloc d'escriure l'hora. No cal posar els patis.</p><div id="slotList">`;
+    state.slots.forEach((x, i) => { h += `<div class="srow2" data-si="${i}"><span>${i+1}a</span><input type="time" step="300" data-sl="s" value="${x.s}" aria-label="Inici"><input type="time" step="300" data-sl="e" value="${x.e}" aria-label="Final"><button type="button" class="ib del" data-slact="del" aria-label="Elimina franja" style="justify-self:start">✕</button></div>`; });
+    h += `</div><button type="button" class="btn" data-slact="add">Afig franja</button>`;
+  }
+  if (setTab === "dies"){
+    h += `<h3 class="sec">Dies sense classe per a tot el centre</h3><p class="hint" style="margin-top:0">Els <b>festius</b> (autonòmics, Falles, festes locals de Dénia, vacances) no compten com a classes no fetes. Les <b>activitats i imprevistos</b> (una eixida de tot el centre, una alerta meteorològica) sí. Per a un període, polsa el primer i l'últim dia.</p>`;
+    state.off.forEach((r,i) => {
+      h += `<div class="orow" data-oi="${i}">${dateBtn('data-pick="off" aria-label="Dates"', r.from, r.to)}<input data-of="label" value="${esc(r.label)}" placeholder="Motiu" aria-label="Motiu"><select data-of="kind" aria-label="Tipus"><option value="fest" ${r.kind !== "inc" ? "selected" : ""}>Festiu</option><option value="inc" ${r.kind === "inc" ? "selected" : ""}>Activitat o imprevist</option></select><button type="button" class="ib del" data-oact="del" aria-label="Elimina">✕</button></div>`;
+    });
+    h += `<button type="button" class="btn" data-pick="off-new">Afig dia o període</button>`;
+    h += `<h3 class="sec">Dies d'avaluació</h3>`;
+    const ev = Object.keys(state.evals).sort();
+    if (!ev.length) h += `<p class="hint" style="margin-top:0">Encara no n'hi ha cap.</p>`;
+    ev.forEach(d => { h += `<div class="orow" data-ed="${d}">${dateBtn('data-pick="eval" aria-label="Data"', d)}<input data-ef="label" value="${esc(state.evals[d])}" placeholder="1a avaluació, inicial…" aria-label="Nom"><button type="button" class="ib del" data-eact="del" aria-label="Elimina">✕</button></div>`; });
+    h += `<button type="button" class="btn" data-pick="eval-new">Afig dia d'avaluació</button>`;
+  }
+  if (setTab === "fitxer"){
+    if (FS){
+      h += `<p style="margin-top:0">${handle ? `Treballes sobre <b>${esc(fileName)}</b>. Cada canvi s'hi desa sol.` : "Encara no hi ha cap fitxer obert: el que fas ara no es guarda."}</p>
+        <p class="hint">Si el fitxer està en una carpeta sincronitzada d'OneDrive o Google Drive, tindràs còpia al núvol i el podràs obrir des d'un altre ordinador.</p>
+        <div class="row" style="margin-top:10px"><button type="button" class="btn" data-fa="open">Obri un altre fitxer</button><button type="button" class="btn" data-fa="new">Desa com a fitxer nou</button><button type="button" class="btn" data-fa="dl">Descarrega una còpia</button></div>`;
+    } else {
+      h += `<p style="margin-top:0">${fileName ? `Fitxer carregat: <b>${esc(fileName)}</b>.` : "Encara no has carregat cap fitxer."} Aquest navegador no pot escriure directament en el fitxer: quan acabes, descarrega'l i substitueix l'anterior.</p>
+        <div class="row" style="margin-top:10px"><button type="button" class="btn" data-fa="load">Carrega fitxer</button><button type="button" class="btn primary" data-fa="dl">Descarrega</button></div>`;
+    }
+    h += `<h3 class="sec">Còpies de seguretat</h3><p class="hint" style="margin-top:0">Dins del mateix fitxer es guarden les 6 últimes còpies automàtiques, una per dia de treball. A més, Ctrl+Z desfà l'últim canvi.</p>
+      <div id="bkList" class="bklist"><p class="hint">Carregant…</p></div>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn" data-bk="now">Fes una còpia ara</button></div>`;
+    setTimeout(fillBackups, 0);
+  }
+  $("#setIn").innerHTML = h;
+}
+
+let bkCache = [];
+const openSes = new Set();
+async function fillBackups(){
+  const el = $("#bkList"); if (!el) return;
+  try {
+    bkCache = await listBackups();
+    el.innerHTML = bkCache.length ? bkCache.map((b, i) => `<div class="bkrow"><span>${esc(fmtStamp(b.t))}</span><span class="hint" style="margin:0">${esc(b.label)}</span><button type="button" class="btn" data-bkr="${i}">Recupera</button></div>`).join("") : `<p class="hint">Encara no n'hi ha cap.</p>`;
+  } catch(e){ el.innerHTML = `<p class="hint">No s'han pogut llegir les còpies.</p>`; }
+}
+function changed(rerenderSet){ save(); refresh(); if (rerenderSet) renderSet(); }
+
+$("#setDlg").addEventListener("click", e => {
+  if (pk && pk.el.contains(e.target)) return;
+  if (e.target === $("#setDlg") || e.target.closest("[data-close]")) { $("#setDlg").close(); return; }
+  const tab = e.target.closest("[data-tab]");
+  if (tab){ setTab = tab.dataset.tab; renderTabs(); renderSet(); return; }
+  const fa = e.target.closest("[data-fa]"); if (fa){ fileAct(fa.dataset.fa); return; }
+  if (e.target.closest("[data-ncopen]")){ openNC(); return; }
+  const bk = e.target.closest("[data-bk]");
+  if (bk){ (async () => { await addBackup("Manual"); if (handle) flush(); else { dirty = true; okStatus(); renderBar(); } fillBackups(); })(); return; }
+  const bkr = e.target.closest("[data-bkr]"); if (bkr){ const b = bkCache[+bkr.dataset.bkr]; if (b) restoreBackup(b); return; }
+  const pb = e.target.closest("[data-pick]");
+  if (pb){
+    const kind = pb.dataset.pick;
+    if (kind === "after"){ const s = state.sdas.find(x => x.id === pb.closest("[data-sid]").dataset.sid); openPicker(pb, "single", s.after || clampCourse(TODAY), null, d => { s.after = d; changed(true); }); }
+    if (kind === "course") openPicker(pb, "range", state.start, state.end, (a,b) => { state.start = a; state.end = b; changed(true); });
+    if (kind === "term"){ const i = +pb.closest("[data-ti]").dataset.ti, t = state.terms[i]; openPicker(pb, "range", t.start, t.end, (a,b) => { t.start = a; t.end = b; changed(true); }); }
+    if (kind === "off"){ const r = state.off[+pb.closest("[data-oi]").dataset.oi]; openPicker(pb, "range", r.from, r.to, (a,b) => { r.from = a; r.to = b; state.off.sort((x,y) => x.from < y.from ? -1 : 1); changed(true); }); }
+    if (kind === "off-new") openPicker(pb, "range", null, null, (a,b) => {
+      const r = {from:a, to:b, label:"", kind:"fest"}; state.off.push(r); state.off.sort((x,y) => x.from < y.from ? -1 : 1); changed(true);
+      const row = $("#setIn").querySelector(`[data-oi="${state.off.indexOf(r)}"] [data-of=label]`); if (row) row.focus();
+    });
+    if (kind === "eval"){ const d = pb.closest("[data-ed]").dataset.ed; openPicker(pb, "single", d, null, nd => { if (nd !== d && !(nd in state.evals)){ state.evals[nd] = state.evals[d]; delete state.evals[d]; changed(true); } }); }
+    if (kind === "eval-new") openPicker(pb, "single", null, null, nd => {
+      if (!(nd in state.evals)) state.evals[nd] = ""; changed(true);
+      const row = $("#setIn").querySelector(`[data-ed="${nd}"] [data-ef=label]`); if (row) row.focus();
+    });
+    return;
+  }
+  const ga = e.target.closest("[data-gact]");
+  if (ga){
+    if (ga.dataset.gact === "gonew"){ const c = $("#ngCard"); c.scrollIntoView({block:"center"}); c.querySelector("[data-ng=code]").focus(); return; }
+    if (ga.dataset.gact === "create"){
+      const card = $("#ngCard");
+      ng.code = card.querySelector("[data-ng=code]").value.trim();
+      ng.name = card.querySelector("[data-ng=name]").value.trim();
+      card.querySelectorAll("[data-ngday]").forEach(x => ng.days[+x.dataset.ngday] = Math.max(0, Math.min(6, parseInt(x.value,10) || 0)));
+      card.querySelectorAll("[data-ngtime]").forEach(x => ng.times[+x.dataset.ngtime] = isTime(x.value) && ng.days[+x.dataset.ngtime] > 0 ? x.value : "");
+      if (!ng.code){ ng.err = "Falta l'abreviatura, que és el que es veu al calendari."; renderSet(); $("#ngCard [data-ng=code]").focus(); return; }
+      if (state.groups.some(g => g.code.toLowerCase() === ng.code.toLowerCase())){ ng.err = "Ja hi ha un grup amb aquesta abreviatura."; renderSet(); $("#ngCard [data-ng=code]").focus(); return; }
+      if (!ng.days.some(x => x > 0)){ ng.err = "Indica almenys un dia amb classe."; renderSet(); $("#ngCard [data-ngday='0']").focus(); return; }
+      const id = uid();
+      let pid = ng.plan;
+      if (pid === "__new" || !plan(pid)){ pid = "p" + id; state.plans.push({id:pid, name:""}); }
+      state.groups.push({id, code:ng.code, name:ng.name || ng.code, color:ng.color, plan:pid, days:ng.days.slice(), times:ng.times.slice()});
+      ng = null;
+      changed(true);
+      return;
+    }
+    const id = ga.closest("[data-gid]").dataset.gid; const g = grp(id);
+    if (!confirm(`Vols eliminar ${g.code || g.name || "aquest grup"}? Les SdA es mantenen si les fa servir un altre grup.`)) return;
+    state.groups = state.groups.filter(x => x.id !== id);
+    for (const k of Object.keys(state.ov)) if (k.startsWith(id + "__")) delete state.ov[k];
+    if (!usersOf(g.plan).length && !sdasP(g.plan).length) prunePlans();
+    sel.delete(id); saveUi();
+    changed(true); return;
+  }
+  const sa = e.target.closest("[data-sact]");
+  if (sa){
+    const act = sa.dataset.sact;
+    if (act === "noafter"){ const s = state.sdas.find(x => x.id === sa.closest("[data-sid]").dataset.sid); s.after = ""; changed(true); return; }
+    if (act === "delplan"){ if (!confirm("Vols eliminar aquesta programació i les seues SdA?")) return; state.sdas = state.sdas.filter(s => s.pid !== sdaPlan); state.plans = state.plans.filter(p => p.id !== sdaPlan); sdaPlan = null; changed(true); return; }
+    if (act === "add") state.sdas.push({id:uid(), pid:sdaPlan, name:"", n:6, color:PAL_SDA[sdasP(sdaPlan).length % PAL_SDA.length], ses:[], after:""});
+    else {
+      const id = sa.closest("[data-sid]").dataset.sid;
+      const list = sdasP(sdaPlan); const i = list.findIndex(x => x.id === id);
+      if (act === "del"){ if (!confirm("Vols eliminar aquesta SdA?")) return; state.sdas = state.sdas.filter(x => x.id !== id); }
+      if (act === "up" || act === "down"){
+        const j = act === "up" ? i - 1 : i + 1;
+        if (j < 0 || j >= list.length) return;
+        const a = state.sdas.indexOf(list[i]), b = state.sdas.indexOf(list[j]);
+        [state.sdas[a], state.sdas[b]] = [state.sdas[b], state.sdas[a]];
+      }
+    }
+    changed(true);
+    if (act === "add"){ const r = $("#setIn").querySelectorAll(".srow"); const l = r[r.length-1]; l && l.querySelector("[data-sf=name]").focus(); }
+    return;
+  }
+  const ta = e.target.closest("[data-tact]");
+  if (ta){
+    if (ta.dataset.tact === "add"){ const l = state.terms[state.terms.length-1]; const st = l ? addD(l.end, 1) : state.start; state.terms.push({name:(state.terms.length+1) + "r trimestre", start:st, end:st > state.end ? st : state.end, color:PAL_T[state.terms.length % PAL_T.length]}); }
+    else state.terms.splice(+ta.closest("[data-ti]").dataset.ti, 1);
+    changed(true); return;
+  }
+  const sla = e.target.closest("[data-slact]");
+  if (sla){
+    if (sla.dataset.slact === "add"){ const l = state.slots[state.slots.length - 1]; const s = l ? (l.e || addMin(l.s, state.dur)) : "08:00"; state.slots.push({s, e:addMin(s, state.dur)}); }
+    else state.slots.splice(+sla.closest("[data-si]").dataset.si, 1);
+    changed(true); return;
+  }
+  const oa = e.target.closest("[data-oact]");
+  if (oa){ state.off.splice(+oa.closest("[data-oi]").dataset.oi, 1); changed(true); return; }
+  const ea = e.target.closest("[data-eact]");
+  if (ea){ delete state.evals[ea.closest("[data-ed]").dataset.ed]; changed(true); return; }
+});
+
+function onSetInput(e){
+  const t = e.target;
+  const live = e.type === "input";
+  if (live && t.type !== "color") return;
+  if (t.id === "sdaP"){ sdaPlan = t.value; renderSet(); return; }
+  if (t.id === "pName"){ const p = plan(sdaPlan); if (p){ p.name = t.value.trim(); save(); refresh(); } return; }
+  if (t.dataset.ng){
+    const k = t.dataset.ng;
+    ng[k] = t.type === "color" ? t.value : k === "plan" ? t.value : t.value.trim();
+    if (k === "color") $("#ngCard").style.setProperty("--g", t.value);
+    return;
+  }
+  if (t.dataset.ngday != null){
+    const i = +t.dataset.ngday; ng.days[i] = Math.max(0, Math.min(6, parseInt(t.value,10) || 0));
+    if (!ng.days[i]) ng.times[i] = "";
+    const tf = $(`#ngCard [data-ngtime="${i}"]`); if (tf){ tf.disabled = !ng.days[i]; if (!ng.days[i]) tf.value = ""; }
+    return;
+  }
+  if (t.dataset.ngtime != null){ ng.times[+t.dataset.ngtime] = isTime(t.value) ? t.value : ""; return; }
+  const gc = t.closest("[data-gid]");
+  if (gc){
+    const g = grp(gc.dataset.gid);
+    const f = t.dataset.gf;
+    if (f === "plan"){
+      const old = g.plan;
+      if (t.value === "__new"){ const pid = "p" + uid(); state.plans.push({id:pid, name:""}); g.plan = pid; } else g.plan = t.value;
+      if (!usersOf(old).length && !sdasP(old).length) prunePlans();
+      changed(true); return;
+    }
+    if (f === "code" || f === "name"){
+      const v = t.value.trim();
+      if (f === "code" && !v){ t.value = g.code; return; }
+      g[f] = v || (f === "name" ? g.code : g[f]);
+      if (f === "name" && !v) t.value = g.name;
+    }
+    if (f === "color"){ g.color = t.value; gc.setAttribute("style", gv(g)); }
+    if (t.dataset.gtime != null){ g.times[+t.dataset.gtime] = isTime(t.value) ? t.value : ""; save(); refresh(); return; }
+    if (t.dataset.gday != null){
+      const i = +t.dataset.gday, val = Math.max(0, Math.min(6, parseInt(t.value,10) || 0));
+      const nd = g.days.slice(); nd[i] = val;
+      if (!nd.some(x => x > 0)){ t.value = g.days[i]; alert("Un grup ha de tindre almenys un dia amb classe."); return; }
+      g.days = nd; t.value = val;
+      if (!val) g.times[i] = "";
+      const tf = gc.querySelector(`[data-gtime="${i}"]`); if (tf){ tf.disabled = !val; if (!val) tf.value = ""; }
+    }
+    save(); refresh(); return;
+  }
+  const sr = t.closest("[data-sid]");
+  if (sr){
+    const s = state.sdas.find(x => x.id === sr.dataset.sid);
+    if (t.dataset.ses != null){
+      const j = +t.dataset.ses, a = (s.ses || []).slice();
+      while (a.length <= j) a.push("");
+      a[j] = t.value.trim();
+      while (a.length && !a[a.length-1]) a.pop();
+      s.ses = a; save(); refresh();
+      const sm = sr.querySelector("details.sesd summary"); if (sm) sm.textContent = `Contingut de les sessions (${a.slice(0, s.n).filter(Boolean).length} de ${s.n})`;
+      return;
+    }
+    if (t.dataset.sf === "n"){ s.n = Math.max(0, Math.min(300, parseInt(t.value,10) || 0)); save(); refresh(); renderSet(); return; }
+    else s[t.dataset.sf] = t.type === "color" ? t.value : t.value.trim();
+    save(); refresh();
+    const el = sr.querySelector(".rng"); if (el) el.textContent = sdaRange(s);
+    return;
+  }
+  const sr2 = t.closest("[data-si]");
+  if (sr2 && t.dataset.sl){
+    const x = state.slots[+sr2.dataset.si], old = x.s;
+    if (t.dataset.sl === "s" && isTime(t.value)){ x.s = t.value; state.groups.forEach(g => { g.times = g.times.map(v => v === old ? t.value : v); }); }
+    if (t.dataset.sl === "e") x.e = isTime(t.value) ? t.value : "";
+    state.slots.sort((a,b) => a.s < b.s ? -1 : 1);
+    save(); refresh(); if (t.dataset.sl === "s") renderSet(); return;
+  }
+  if (t.dataset.cf === "dur"){ state.dur = Math.max(10, Math.min(240, parseInt(t.value,10) || 55)); t.value = state.dur; save(); refresh(); return; }
+  const tr = t.closest("[data-ti]");
+  if (tr){
+    const tm = state.terms[+tr.dataset.ti];
+    if (t.dataset.tf === "name") tm.name = t.value.trim();
+    else if (t.dataset.tf === "color") tm.color = t.value;
+    save(); refresh(); return;
+  }
+  const or = t.closest("[data-oi]");
+  if (or && t.dataset.of === "kind"){ state.off[+or.dataset.oi].kind = t.value === "inc" ? "inc" : "fest"; save(); refresh(); return; }
+  if (or && t.dataset.of === "label"){ state.off[+or.dataset.oi].label = t.value.trim(); save(); refresh(); return; }
+  const er = t.closest("[data-ed]");
+  if (er && t.dataset.ef === "label"){ state.evals[er.dataset.ed] = t.value.trim(); save(); refresh(); return; }
+}
+$("#setDlg").addEventListener("change", onSetInput);
+$("#setDlg").addEventListener("toggle", e => { const d = e.target; if (d.matches && d.matches("details.sesd")){ if (d.open) openSes.add(d.dataset.sid); else openSes.delete(d.dataset.sid); } }, true);
+$("#setDlg").addEventListener("input", onSetInput);
+$("#setDlg").addEventListener("input", e => {
+  const t = e.target, isG = t.dataset.gday != null, isN = t.dataset.ngday != null;
+  if (!isG && !isN) return;
+  const i = isG ? t.dataset.gday : t.dataset.ngday, card = t.closest(".gcard");
+  const tf = card && card.querySelector(isG ? `[data-gtime="${i}"]` : `[data-ngtime="${i}"]`);
+  if (tf) tf.disabled = !(parseInt(t.value, 10) > 0);
+});
+$("#setDlg").addEventListener("cancel", e => { if (pk){ e.preventDefault(); closePicker(); } });
+$("#dayDlg").addEventListener("cancel", e => { if (pk){ e.preventDefault(); closePicker(); } });
+$("#prDlg").addEventListener("click", e => { if (e.target === $("#prDlg") || e.target.closest("[data-close]")) $("#prDlg").close(); });
+
+/* ---------- visita guiada ---------- */
+let tour = null;
+const needSet = tab => () => {
+  if (!$("#setDlg").open) openSet(tab || undefined);
+  else if (tab && setTab !== tab){ setTab = tab; renderTabs(); renderSet(); }
+};
+const closeDlgs = () => { closePicker(); document.querySelectorAll("dialog[open]").forEach(d => d.close()); };
+function ensureDemoGroup(){
+  if (state.groups.length) return;
+  state.plans.push({id:"pdemo", name:""});
+  state.groups.push({id:"gdemo", code:"1ESO A", name:"1r ESO A, Tecnologia i Robòtica", color:PAL_G[0], plan:"pdemo", days:[1,0,0,2,0], times:["","","","",""]});
+  refresh();
+}
+function ensureDemoSda(){
+  ensureDemoGroup();
+  const g = state.groups[0];
+  if (!sdasOf(g.id).length){ state.sdas.push({id:"sdemo", pid:g.plan, name:"Robots", n:6, color:PAL_SDA[0], ses:[], after:""}); refresh(); }
+}
+function tourDay(){
+  if (tour.ds && CALC.byDate[tour.ds]) return;
+  const from = clampCourse(TODAY);
+  tour.ds = Object.keys(CALC.byDate).sort().find(d => d >= from && CALC.byDate[d].some(e => !e.cancel && e.slots.some(s => !s.free))) || Object.keys(CALC.byDate).sort()[0];
+}
+const dayCell = () => tour && tour.ds ? document.querySelector(`#cal button.day[data-d="${tour.ds}"]`) : null;
+const openDayStep = () => { if (!$("#dayDlg").open){ tourDay(); openDay(tour.ds); } };
+const TS = [
+  {wait:"next", text:"<b>Benvinguda a la visita guiada.</b> Farem un recorregut amb un planificador d'exemple. El teu fitxer no es toca: en acabar tornaràs on eres."},
+  {sel:"#openSet", wait:"click", before:closeDlgs, text:"Tot es configura des d'ací. <b>Punxa «Configuració».</b>"},
+  {sel:'#tabs [data-tab="curs"]', wait:"click", before:needSet(), text:"Primer, el curs. <b>Punxa «Curs i trimestres».</b>"},
+  {sel:'[data-pick="course"]', wait:"next", before:needSet("curs"), text:"El primer i l'últim dia lectiu. En polsar-hi s'obri un calendari: tries el primer dia i després l'últim."},
+  {sel:".trow", wait:"next", before:needSet("curs"), text:"Cada trimestre té <b>color, nom i dates</b>. El color és el fons que tindran els seus dies al calendari."},
+  {sel:'[data-slact="add"]', wait:"next", before:needSet("curs"), text:"<b>Horari del centre:</b> si hi poses les franges de classe (8:00–8:55…), en cada grup triaràs l'hora d'un desplegable."},
+  {sel:'#tabs [data-tab="grups"]', wait:"click", before:needSet(), text:"Ara els grups. <b>Punxa «Grups».</b>"},
+  {sel:'#ngCard [data-ng="code"]', wait:"input", before:needSet("grups"), ok:() => { const x = $('#ngCard [data-ng="code"]'); return !!(x && x.value.trim()); }, text:"Escriu l'<b>abreviatura</b> del grup, tal com vols veure-la al calendari. Per exemple: <b>1ESO A</b>."},
+  {sel:'#ngCard [data-ng="name"]', wait:"next", before:needSet("grups"), text:"Opcional: el <b>nom complet</b>, amb nivell, grup i matèria. Per exemple: <i>1r ESO A, Tecnologia i Robòtica</i>."},
+  {sel:() => { const x = $('#ngCard [data-ngday="0"]'); return x && x.closest(".days"); }, wait:"input", before:needSet("grups"), ok:() => [...document.querySelectorAll("#ngCard [data-ngday]")].some(x => +x.value > 0), text:"Quantes <b>sessions</b> tens amb aquest grup cada dia de la setmana. Posa'n almenys un (per exemple, 1 el dilluns i 2 el dijous)."},
+  {sel:() => { const x = $('#ngCard [data-ngtime="0"]'); return x && x.closest(".days"); }, wait:"next", before:needSet("grups"), text:"L'<b>hora</b> de cada dia és opcional. Les caselles dels dies sense classe queden en gris."},
+  {sel:'#ngCard [data-ng="plan"]', wait:"next", before:needSet("grups"), text:"Si tens diversos grups del mateix nivell (1ESO A, B, C…), poden <b>compartir les SdA</b>: les defineixes una vegada i cada grup avança amb el seu horari. Per al primer grup, deixa «Programació nova»."},
+  {sel:'#ngCard [data-gact="create"]', wait:"click", before:needSet("grups"), ok:() => state.groups.length > 0, text:"<b>Punxa «Crea el grup».</b> Si falta alguna dada, t'ho dirà en roig."},
+  {sel:'#tabs [data-tab="sda"]', wait:"click", before:() => { ensureDemoGroup(); needSet()(); }, text:"Ara les situacions d'aprenentatge. <b>Punxa «SdA».</b>"},
+  {sel:'[data-sact="add"]', wait:"click", before:() => { ensureDemoGroup(); needSet("sda")(); }, ok:() => state.sdas.length > 0, text:"<b>Punxa «Afig SdA»</b> per a crear la primera."},
+  {sel:".srow", wait:"next", before:() => { ensureDemoSda(); needSet("sda")(); }, text:"Posa-li <b>títol i nombre de sessions</b>. Les fletxes canvien l'ordre: les SdA es fan una darrere l'altra. Si una SdA no pot començar abans d'una data, indica-ho a «Comença no abans de»."},
+  {sel:"details.sesd", wait:"next", before:() => { ensureDemoSda(); needSet("sda")(); }, text:"Ací escrius <b>què es fa a cada sessió</b>. Ho veuràs a la vista setmanal i passant el ratolí per damunt."},
+  {sel:'#tabs [data-tab="dies"]', wait:"click", before:needSet(), text:"<b>Punxa «Dies sense classe i avaluacions».</b>"},
+  {sel:'[data-pick="off-new"]', wait:"next", before:needSet("dies"), text:"<b>Els festius s'afigen ací.</b> Ja hi ha els autonòmics; afig els locals i les vacances. Si és una eixida o un imprevist de tot el centre, tria «Activitat o imprevist»: comptarà com a classe no feta."},
+  {sel:'[data-pick="eval-new"]', wait:"next", before:needSet("dies"), text:"I ací els <b>dies d'avaluació</b>: es pinten en violeta però no lleven classes."},
+  {sel:"#setDlg [data-close]", wait:"click", before:needSet(), text:"<b>Punxa «Tanca».</b>"},
+  {sel:dayCell, wait:"next", before:() => { closeDlgs(); ensureDemoSda(); ui.view = "month"; tour.ds = null; tourDay(); cursor = tour.ds; renderCal(); }, text:"Cada etiqueta és una sessió: <b>grup · SdA · sessió/total</b>, i a la dreta el número dins del trimestre. L'última sessió d'una SdA té la vora gruixuda."},
+  {sel:dayCell, wait:"click", before:() => { closeDlgs(); if (!dayCell()){ tourDay(); cursor = tour.ds; renderCal(); } }, text:"Si un dia no es fa la classe, <b>punxa el dia</b>."},
+  {sel:"#dayIn .grow [data-act='dec']", wait:"click", before:openDayStep, text:"<b>Punxa «−»</b> per deixar la classe a 0. Totes les sessions de després es corren soles."},
+  {sel:"#dayIn .gnote", wait:"next", before:openDayStep, text:"Ací apuntes el <b>motiu</b> (eixida, alerta meteo…). Al resum apareix com a classe no feta."},
+  {sel:"#offChk", wait:"next", before:openDayStep, text:"Si el dia no hi ha classe per a <b>tot el centre</b>, marca açò i tria si és festiu o activitat/imprevist."},
+  {sel:"#dayDlg [data-close]", wait:"click", before:openDayStep, text:"<b>Punxa «Tanca».</b>"},
+  {sel:"#views", wait:"next", before:closeDlgs, text:"<b>Vistes:</b> setmana (amb el contingut de cada sessió), mes, dos mesos, trimestre i curs sencer. Es passa d'una a l'altra amb les fletxes."},
+  {sel:"#filters", wait:"next", before:closeDlgs, text:"Pots <b>filtrar</b> per un o diversos grups. La llegenda explica els colors."},
+  {sel:"#sum", wait:"next", before:() => { closeDlgs(); if (!ui.showSum){ ui.showSum = true; renderSum(); layout(); } }, text:"El <b>resum</b>: sessions per trimestre, quan acaba cada SdA, si sobren o falten sessions i les classes no fetes."},
+  {sel:".actions", wait:"next", before:closeDlgs, text:"<b>Desfer i refer</b> (Ctrl+Z, Ctrl+Y), <b>exportar</b> (temporalització en full de càlcul i calendari), mode clar o fosc, <b>imprimir</b> i aquesta guia."},
+  {wait:"next", before:closeDlgs, text:"<b>Ja està!</b> En acabar tornaràs al teu planificador. Per a començar de veritat, «Crea un fitxer nou» i guarda'l on vulgues: en una carpeta d'OneDrive o Google Drive el tindràs en tots els ordinadors."}
+];
+function startTour(){
+  if (tour) return;
+  closeDlgs();
+  tour = {i:0, ds:null, saved:{state, undoS, redoS, baseline, sel:[...sel], view:ui.view, showSum:ui.showSum, cursor, dirty}};
+  demo = true;
+  state = defaultState(); sel = new Set(); ui.view = "month"; cursor = clampCourse(TODAY); ng = null; setTab = "grups";
+  resetHistory(); renderAll(); renderBar(); okStatus();
+  const L = document.createElement("div");
+  L.className = "tour";
+  L.innerHTML = `<div class="tour-hole"></div><div class="tour-card" role="dialog" aria-live="polite" aria-label="Visita guiada"></div>`;
+  document.body.appendChild(L);
+  tour.L = L;
+  L.querySelector(".tour-card").addEventListener("click", e => {
+    const b = e.target.closest("[data-tour]"); if (!b || !tour) return;
+    e.stopPropagation();
+    if (b.dataset.tour === "exit") endTour(); else tourGo(tour.i + 1);
+  });
+  tour.timer = setInterval(tourTick, 150);
+  tourGo(0);
+}
+function endTour(){
+  if (!tour) return;
+  clearInterval(tour.timer); tour.L.remove();
+  const s = tour.saved; tour = null;
+  closeDlgs();
+  demo = null;
+  state = s.state; undoS = s.undoS; redoS = s.redoS; baseline = s.baseline; sel = new Set(s.sel);
+  ui.view = s.view; ui.showSum = s.showSum; cursor = s.cursor; dirty = s.dirty; ng = null;
+  updUndo(); renderAll(); renderBar(); okStatus();
+}
+const tourEl = st => typeof st.sel === "function" ? st.sel() : st.sel ? document.querySelector(st.sel) : null;
+function tourGo(i){
+  if (!tour) return;
+  if (i >= TS.length){ endTour(); return; }
+  tour.i = i;
+  const st = TS[i];
+  if (st.before) st.before();
+  const card = tour.L.querySelector(".tour-card");
+  const last = i === TS.length - 1;
+  let btns = `<button type="button" class="btn" data-tour="exit">Surt</button>`;
+  if (st.wait === "next") btns += `<button type="button" class="btn primary" data-tour="next">${last ? "Acaba" : "Següent"}</button>`;
+  else if (st.wait === "input") btns += `<button type="button" class="btn primary" data-tour="next" disabled>Següent</button>`;
+  else btns += `<button type="button" class="btn" data-tour="next">Salta</button>`;
+  card.innerHTML = `<div class="tc-n">Pas ${i+1} de ${TS.length}</div><div class="tc-t">${st.text}</div>${st.wait === "click" ? `<div class="tc-hint">Punxa la zona ressaltada per a continuar</div>` : st.wait === "input" ? `<div class="tc-hint">Escriu-ho a la zona ressaltada</div>` : ""}<div class="tc-b">${btns}</div>`;
+  setTimeout(() => {
+    if (!tour) return;
+    const el = tourEl(st);
+    if (el){ const r = el.getBoundingClientRect(); if (r.top < 60 || r.bottom > window.innerHeight - 60) el.scrollIntoView({block:"center"}); }
+    tourTick();
+    const nb = card.querySelector('[data-tour="next"]:not([disabled])'); if (nb && st.wait === "next") nb.focus();
+  }, 80);
+}
+function tourTick(){
+  if (!tour) return;
+  const st = TS[tour.i], el = tourEl(st), L = tour.L;
+  const host = (el && el.closest("dialog")) || document.querySelector("dialog[open]") || document.body;
+  if (L.parentNode !== host) host.appendChild(L);
+  const hole = L.querySelector(".tour-hole"), card = L.querySelector(".tour-card");
+  if (st.wait === "input"){ const nb = card.querySelector('[data-tour="next"]'); if (nb) nb.disabled = !st.ok(); }
+  const cw = card.offsetWidth, ch = card.offsetHeight, W = window.innerWidth, H = window.innerHeight;
+  const r = el ? el.getBoundingClientRect() : null;
+  if (!r || !r.width){
+    hole.style.display = "none"; L.classList.add("dim");
+    card.style.left = Math.max(8, (W - cw) / 2) + "px"; card.style.top = Math.max(8, (H - ch) / 2) + "px";
+    return;
+  }
+  L.classList.remove("dim");
+  hole.style.display = "block";
+  hole.style.left = (r.left - 6) + "px"; hole.style.top = (r.top - 6) + "px";
+  hole.style.width = (r.width + 12) + "px"; hole.style.height = (r.height + 12) + "px";
+  const cl = v => Math.min(Math.max(8, v), W - cw - 8), ct = v => Math.min(Math.max(8, v), H - ch - 8);
+  let left = cl(r.left), top;
+  if (r.bottom + 14 + ch < H - 8) top = r.bottom + 14;
+  else if (r.top - 14 - ch > 8) top = r.top - 14 - ch;
+  else if (r.right + 14 + cw < W - 8){ left = r.right + 14; top = ct(r.top); }
+  else if (r.left - 14 - cw > 8){ left = r.left - 14 - cw; top = ct(r.top); }
+  else top = H - ch - 8;
+  card.style.left = left + "px"; card.style.top = top + "px";
+}
+document.addEventListener("click", e => {
+  if (!tour || (e.target.closest && e.target.closest(".tour-card"))) return;
+  const st = TS[tour.i];
+  if (st.wait !== "click") return;
+  const el = tourEl(st);
+  if (!el || !el.contains(e.target)) return;
+  const i = tour.i;
+  setTimeout(() => { if (tour && tour.i === i && (!st.ok || st.ok())) tourGo(i + 1); }, 180);
+}, true);
+window.addEventListener("resize", () => { if (tour) tourTick(); });
+
+/* ---------- esdeveniments generals ---------- */
+$("#cal").addEventListener("click", e => {
+  const op = e.target.closest("[data-open]"); if (op){ openSet(op.dataset.open); return; }
+  const d = e.target.closest("button.day[data-d]"); if (d) openDay(d.dataset.d);
+});
+$("#filters").addEventListener("click", e => {
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  const f = b.dataset.f;
+  if (f === "all") sel.clear();
+  else if (sel.has(f)) sel.delete(f);
+  else sel.add(f);
+  if (sel.size === state.groups.length) sel.clear();
+  saveUi(); refresh();
+});
+$("#views").addEventListener("click", e => {
+  const b = e.target.closest("[data-v]"); if (!b) return;
+  ui.view = b.dataset.v; saveUi(); renderCal();
+});
+$("#prev").addEventListener("click", () => move(-1));
+$("#next").addEventListener("click", () => move(1));
+$("#goToday").addEventListener("click", () => { cursor = clampCourse(TODAY); renderCal(); });
+$("#sumBtn").addEventListener("click", () => { ui.showSum = !ui.showSum; saveUi(); renderSum(); layout(); });
+$("#openSet").addEventListener("click", () => openSet());
+$("#undoBtn").addEventListener("click", undo);
+$("#tourBtn").addEventListener("click", startTour);
+$("#redoBtn").addEventListener("click", redo);
+$("#expBtn").addEventListener("click", openExport);
+document.addEventListener("keydown", e => {
+  if (!(e.ctrlKey || e.metaKey) || pk) return;
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  const k = e.key.toLowerCase();
+  if (k === "z" && !e.shiftKey){ e.preventDefault(); undo(); }
+  else if (k === "y" || (k === "z" && e.shiftKey)){ e.preventDefault(); redo(); }
+});
+$("#setDlg").addEventListener("close", () => { closePicker(); refresh(); });
+document.addEventListener("keydown", e => {
+  if (pk || document.querySelector("dialog[open]") || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if (e.key === "ArrowLeft") move(-1);
+  if (e.key === "ArrowRight") move(1);
+});
+if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+
+cursor = clampCourse(TODAY);
+applyTheme();
+renderAll();
+resetHistory();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout());
+(async () => {
+  if (FS){
+    lastHandle = await idbGet("last");
+    if (lastHandle){ setStatus("Obrint " + lastHandle.name + "…"); await useHandle(lastHandle, true); }
+  }
+  renderBar(); okStatus();
+})();
+})();
+</script>
+</body>
+</html>

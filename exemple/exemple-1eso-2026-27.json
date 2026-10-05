@@ -1,0 +1,302 @@
+{
+  "v": 4,
+  "start": "2026-09-09",
+  "end": "2027-06-18",
+  "dur": 55,
+  "slots": [
+    {
+      "s": "08:00",
+      "e": "08:55"
+    },
+    {
+      "s": "08:55",
+      "e": "09:50"
+    },
+    {
+      "s": "09:50",
+      "e": "10:45"
+    },
+    {
+      "s": "11:15",
+      "e": "12:10"
+    },
+    {
+      "s": "12:10",
+      "e": "13:05"
+    },
+    {
+      "s": "13:20",
+      "e": "14:15"
+    },
+    {
+      "s": "14:15",
+      "e": "15:10"
+    }
+  ],
+  "terms": [
+    {
+      "name": "1r trimestre",
+      "start": "2026-09-09",
+      "end": "2026-12-21",
+      "color": "#3D7BD9"
+    },
+    {
+      "name": "2n trimestre",
+      "start": "2027-01-07",
+      "end": "2027-03-24",
+      "color": "#E39B1B"
+    },
+    {
+      "name": "3r trimestre",
+      "start": "2027-04-06",
+      "end": "2027-06-18",
+      "color": "#3FA45B"
+    }
+  ],
+  "off": [
+    {
+      "from": "2026-10-09",
+      "to": "2026-10-09",
+      "label": "9 d'Octubre",
+      "kind": "fest"
+    },
+    {
+      "from": "2026-10-12",
+      "to": "2026-10-12",
+      "label": "Festa nacional",
+      "kind": "fest"
+    },
+    {
+      "from": "2026-11-13",
+      "to": "2026-11-13",
+      "label": "Eixida al Montgó",
+      "kind": "inc"
+    },
+    {
+      "from": "2026-12-08",
+      "to": "2026-12-08",
+      "label": "Immaculada",
+      "kind": "fest"
+    },
+    {
+      "from": "2026-12-22",
+      "to": "2027-01-06",
+      "label": "Nadal",
+      "kind": "fest"
+    },
+    {
+      "from": "2027-03-16",
+      "to": "2027-03-18",
+      "label": "Falles",
+      "kind": "fest"
+    },
+    {
+      "from": "2027-03-19",
+      "to": "2027-03-19",
+      "label": "Sant Josep",
+      "kind": "fest"
+    },
+    {
+      "from": "2027-03-25",
+      "to": "2027-04-05",
+      "label": "Pasqua",
+      "kind": "fest"
+    }
+  ],
+  "evals": {
+    "2026-10-20": "Avaluació inicial",
+    "2026-12-16": "1a avaluació",
+    "2027-03-23": "2a avaluació",
+    "2027-06-22": "Avaluació final"
+  },
+  "plans": [
+    {
+      "id": "pval",
+      "name": "Valencià: Llengua i Literatura 1r ESO"
+    },
+    {
+      "id": "pref",
+      "name": "Taller de Reforç 1r ESO"
+    }
+  ],
+  "groups": [
+    {
+      "id": "gva",
+      "code": "VAL A",
+      "name": "1r ESO A, Valencià: Llengua i Literatura",
+      "color": "#B0408A",
+      "plan": "pval",
+      "days": [
+        1,
+        0,
+        1,
+        1,
+        0
+      ],
+      "times": [
+        "08:00",
+        "",
+        "11:15",
+        "09:50",
+        ""
+      ]
+    },
+    {
+      "id": "gvb",
+      "code": "VAL B",
+      "name": "1r ESO B, Valencià: Llengua i Literatura",
+      "color": "#22466A",
+      "plan": "pval",
+      "days": [
+        0,
+        1,
+        1,
+        0,
+        1
+      ],
+      "times": [
+        "",
+        "12:10",
+        "08:55",
+        "",
+        "08:00"
+      ]
+    },
+    {
+      "id": "gtr",
+      "code": "REF",
+      "name": "1r ESO, Taller de Reforç (optativa)",
+      "color": "#2E6B4F",
+      "plan": "pref",
+      "days": [
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      "times": [
+        "",
+        "13:20",
+        "",
+        "11:15",
+        ""
+      ]
+    }
+  ],
+  "sdas": [
+    {
+      "id": "v1",
+      "pid": "pval",
+      "name": "Qui soc jo? El text autobiogràfic",
+      "n": 9,
+      "color": "#2F6FDE",
+      "ses": [
+        "Presentació: qui soc jo? Pluja d'idees",
+        "Lectura de fragments autobiogràfics",
+        "El text narratiu: elements i estructura",
+        "Planificació del meu text autobiogràfic",
+        "Escriptura del primer esborrany",
+        "Revisió entre iguals",
+        "Ortografia en context: accents",
+        "Versió final",
+        "Lectura en veu alta i autoavaluació"
+      ],
+      "after": ""
+    },
+    {
+      "id": "v2",
+      "pid": "pval",
+      "name": "Rondalles de casa nostra",
+      "n": 12,
+      "color": "#E0662F",
+      "ses": [],
+      "after": ""
+    },
+    {
+      "id": "v3",
+      "pid": "pval",
+      "name": "Fem un diari d'aula: la notícia",
+      "n": 12,
+      "color": "#1E9E6A",
+      "ses": [],
+      "after": "2027-01-07"
+    },
+    {
+      "id": "v4",
+      "pid": "pval",
+      "name": "Poesia en veu alta",
+      "n": 9,
+      "color": "#C23FA0",
+      "ses": [],
+      "after": ""
+    },
+    {
+      "id": "v5",
+      "pid": "pval",
+      "name": "El nostre pòdcast",
+      "n": 12,
+      "color": "#D9A100",
+      "ses": [],
+      "after": ""
+    },
+    {
+      "id": "r1",
+      "pid": "pref",
+      "name": "Entenc el que llig",
+      "n": 8,
+      "color": "#2F6FDE",
+      "ses": [
+        "Diagnòstic de comprensió lectora",
+        "Estratègies abans de llegir",
+        "Idea principal i secundàries",
+        "Esquemes i mapes conceptuals",
+        "Inferències",
+        "Textos discontinus: gràfics i taules",
+        "Repàs amb textos del curs",
+        "Valoració i portafoli"
+      ],
+      "after": ""
+    },
+    {
+      "id": "r2",
+      "pid": "pref",
+      "name": "Escriptura guiada",
+      "n": 10,
+      "color": "#E0662F",
+      "ses": [],
+      "after": ""
+    },
+    {
+      "id": "r3",
+      "pid": "pref",
+      "name": "Ortografia en context",
+      "n": 8,
+      "color": "#1E9E6A",
+      "ses": [],
+      "after": ""
+    },
+    {
+      "id": "r4",
+      "pid": "pref",
+      "name": "Parlem en públic",
+      "n": 8,
+      "color": "#C23FA0",
+      "ses": [],
+      "after": ""
+    }
+  ],
+  "ov": {
+    "gvb__2026-10-28": {
+      "n": 0,
+      "note": "Alerta meteorològica"
+    },
+    "gva__2026-10-15": {
+      "n": 0,
+      "note": "Xerrada de tutoria"
+    }
+  },
+  "notes": {
+    "2026-10-07": "Portar el llibre de lectura"
+  }
+}
