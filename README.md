@@ -34,7 +34,7 @@ Quan planifiques una SdA en un full de càlcul i numeres les sessions a mà, n'h
 
 ### Opció A: en línia
 
-Obri **https://USUARI.github.io/sessions-curs/** (canvia `USUARI` pel nom del compte de GitHub on està publicat). La pàgina s'executa al teu navegador; les dades continuen en el teu ordinador.
+Obri [https://rubparsa.github.io/sessions-curs/](https://rubparsa.github.io/sessions-curs/). La pàgina s'executa al teu navegador; les dades continuen en el teu ordinador.
 
 ### Opció B: descarregant-la
 
